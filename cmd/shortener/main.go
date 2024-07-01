@@ -7,7 +7,7 @@ import (
 	"shortener/internal/app"
 )
 
-const baseUrl = "http://localhost:8080"
+const baseURL = "http://localhost:8080"
 const shortStringLength = 6
 
 var store = map[string]string{}
@@ -35,9 +35,9 @@ func createShortHandler(res http.ResponseWriter, req *http.Request) {
 	if err == nil {
 		res.WriteHeader(http.StatusCreated)
 		res.Header().Set("Content-Type", "text/plain")
-		genUrl := app.GenerateShortUrl(baseUrl, shortStringLength)
-		store[genUrl] = string(bodyBytes)
-		_, err = res.Write([]byte(genUrl))
+		genURL := app.GenerateShortURL(baseURL, shortStringLength)
+		store[genURL] = string(bodyBytes)
+		_, err = res.Write([]byte(genURL))
 		if err != nil {
 			panic(err)
 		}
@@ -46,9 +46,9 @@ func createShortHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func searchShortHandler(res http.ResponseWriter, req *http.Request) {
-	redirectUrl, ok := store[baseUrl+req.URL.Path]
+	redirectURL, ok := store[baseURL+req.URL.Path]
 	if req.Method == http.MethodGet && ok {
-		res.Header().Set("Location", redirectUrl)
+		res.Header().Set("Location", redirectURL)
 		res.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
 		res.WriteHeader(http.StatusBadRequest)

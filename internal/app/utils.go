@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func GenerateShortUrl(baseUrl string, length int) string {
+func GenerateShortURL(baseURL string, length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	seed := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(seed)
@@ -14,5 +14,5 @@ func GenerateShortUrl(baseUrl string, length int) string {
 	for i := range buf {
 		buf[i] = charset[random.Intn(len(charset))]
 	}
-	return baseUrl + "/" + string(buf)
+	return baseURL + "/" + string(buf)
 }
