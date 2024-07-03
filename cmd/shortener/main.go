@@ -15,7 +15,7 @@ func main() {
 		res.WriteHeader(http.StatusBadRequest)
 	})
 	err := http.ListenAndServe(":8080", r)
-	if err == nil {
+	if err != nil {
 		panic(err)
 	}
 }
