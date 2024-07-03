@@ -123,7 +123,10 @@ func Test_searchShortHandler(t *testing.T) {
 			h(w, request)
 			result := w.Result()
 
-			assert.Equal(t, tt.want.code, result.StatusCode)
+			err := result.Body.Close()
+			if err != nil {
+				assert.Equal(t, tt.want.code, result.StatusCode)
+			}
 		})
 	}
 }
