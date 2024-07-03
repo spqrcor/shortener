@@ -7,8 +7,7 @@ import (
 
 func GenerateShortURL(baseURL string, length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	seed := rand.NewSource(time.Now().UnixNano())
-	random := rand.New(seed)
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	buf := make([]byte, length)
 	for i := range buf {
