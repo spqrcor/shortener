@@ -14,7 +14,9 @@ func main() {
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 	})
-	err := http.ListenAndServe(":8080", r)
+
+	parseFlags()
+	err := http.ListenAndServe(flagRunAddr, r)
 	if err != nil {
 		panic(err)
 	}
