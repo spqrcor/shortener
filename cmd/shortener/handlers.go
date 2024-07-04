@@ -34,7 +34,7 @@ func createShortHandler(store map[string]string) http.HandlerFunc {
 		if err == nil {
 			res.WriteHeader(http.StatusCreated)
 			res.Header().Set("Content-Type", "text/plain")
-			genURL := app.GenerateShortURL(flagBaseUrl, shortStringLength)
+			genURL := app.GenerateShortURL(flagBaseURL, shortStringLength)
 			store[genURL] = string(bodyBytes)
 			_, err = res.Write([]byte(genURL))
 			if err != nil {
@@ -47,7 +47,7 @@ func createShortHandler(store map[string]string) http.HandlerFunc {
 
 func searchShortHandler(store map[string]string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		redirectURL, ok := store[flagBaseUrl+req.URL.Path]
+		redirectURL, ok := store[flagBaseURL+req.URL.Path]
 		if req.Method == http.MethodGet && ok {
 			http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
 		} else {
