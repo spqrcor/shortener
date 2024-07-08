@@ -10,6 +10,7 @@ import (
 )
 
 var testStore = map[string]string{"http://localhost:8080/FaKeLiNk": "https://ya.ru"}
+var testCfg = Config{addr: ":8080", baseURL: "http://localhost:8080"}
 
 func Test_createShortHandler(t *testing.T) {
 	type want struct {
@@ -64,7 +65,7 @@ func Test_createShortHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, "/", strings.NewReader(tt.body))
 			request.Header.Add("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			h := createShortHandler(testStore)
+			h := createShortHandler(testStore, testCfg)
 			h(w, request)
 			result := w.Result()
 
@@ -119,7 +120,7 @@ func Test_searchShortHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, nil)
 			w := httptest.NewRecorder()
-			h := searchShortHandler(testStore)
+			h := searchShortHandler(testStore, testCfg)
 			h(w, request)
 			result := w.Result()
 

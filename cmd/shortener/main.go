@@ -2,22 +2,22 @@ package main
 
 import (
 	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 )
 
-var store = map[string]string{}
-
 func main() {
+	var store = map[string]string{}
+	cfg := parseFlags()
 	r := chi.NewRouter()
-	r.Post("/", createShortHandler(store))
-	r.Get("/{id}", searchShortHandler(store))
+	r.Post("/", createShortHandler(store, cfg))
+	r.Get("/{id}", searchShortHandler(store, cfg))
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 	})
 
-	parseFlags()
-	err := http.ListenAndServe(flagRunAddr, r)
+	err := http.ListenAndServe(cfg.addr, r)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
