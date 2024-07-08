@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	var store = map[string]string{}
+	store := map[string]string{}
 	cfg := parseFlags()
 	r := chi.NewRouter()
 	r.Post("/", createShortHandler(store, cfg))
