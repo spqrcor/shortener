@@ -18,8 +18,8 @@ var Cfg = Config{
 }
 
 func ParseFlags() {
-	flag.StringVar(&Cfg.Addr, "a", "localhost:8080", "server address")
-	flag.StringVar(&Cfg.BaseURL, "b", "http://localhost:8080", "base result server address")
+	flag.StringVar(&Cfg.Addr, "a", Cfg.Addr, "address and port to run server")
+	flag.StringVar(&Cfg.BaseURL, "b", Cfg.BaseURL, "base url")
 	flag.Parse()
 
 	serverAddressEnv, findAddress := os.LookupEnv("SERVER_ADDRESS")
