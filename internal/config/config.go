@@ -2,8 +2,7 @@ package config
 
 import (
 	"flag"
-	"github.com/caarlos0/env/v6"
-	"log"
+	"os"
 )
 
 type Config struct {
@@ -13,23 +12,23 @@ type Config struct {
 }
 
 var Cfg = Config{
-	Addr:              ":8080",
+	Addr:              "localhost:8080",
 	BaseURL:           "http://localhost:8080",
 	ShortStringLength: 6,
 }
 
 func ParseFlags() {
-	err := env.Parse(&Cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if Cfg.Addr == "" {
-		flag.StringVar(&Cfg.Addr, "a", Cfg.Addr, "address and port to run server")
-	}
-
-	if Cfg.BaseURL == "" {
-		flag.StringVar(&Cfg.BaseURL, "b", Cfg.BaseURL, "base url")
-	}
+	flag.StringVar(&Cfg.Addr, "a", "localhost:8080", "server address")
+	flag.StringVar(&Cfg.BaseURL, "b", "http://localhost:8080", "base result server address")
 	flag.Parse()
+
+	serverAddressEnv, findAddress := os.LookupEnv("SERVER_ADDRESS")
+	serverBaseURLEnv, findBaseURL := os.LookupEnv("BASE_URL")
+
+	if findAddress {
+		Cfg.Addr = serverAddressEnv
+	}
+	if findBaseURL {
+		Cfg.BaseURL = serverBaseURLEnv
+	}
 }
