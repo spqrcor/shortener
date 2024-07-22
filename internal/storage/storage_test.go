@@ -30,20 +30,17 @@ func TestAdd(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			genUrl, _ := Add(tt.inputURL)
+			genURL, _ := Add(tt.inputURL)
 			if tt.wantErr {
-				assert.Empty(t, genUrl)
+				assert.Empty(t, genURL)
 			} else {
-				assert.NotEmpty(t, genUrl)
+				assert.NotEmpty(t, genURL)
 			}
 		})
 	}
 }
 
 func TestFind(t *testing.T) {
-	type args struct {
-		key string
-	}
 	tests := []struct {
 		name    string
 		wantErr bool
@@ -62,8 +59,8 @@ func TestFind(t *testing.T) {
 			key := "INVALID_KEY"
 
 			if !tt.wantErr {
-				genUrl, _ := Add("https://ya.ru")
-				result, _ := url.ParseRequestURI(genUrl)
+				genURL, _ := Add("https://ya.ru")
+				result, _ := url.ParseRequestURI(genURL)
 				key = result.Path
 			}
 

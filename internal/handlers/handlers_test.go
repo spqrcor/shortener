@@ -114,11 +114,11 @@ func Test_searchShortHandler(t *testing.T) {
 			},
 		},
 	}
-	genUrl, _ := storage.Add("https://ya.ru")
+	genURL, _ := storage.Add("https://ya.ru")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.name == "GET current" {
-				tt.target = genUrl
+				tt.target = genURL
 			}
 			request := httptest.NewRequest(tt.method, tt.target, nil)
 			w := httptest.NewRecorder()
