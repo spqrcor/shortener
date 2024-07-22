@@ -42,7 +42,6 @@ func CreateShortHandler() http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		res.WriteHeader(http.StatusBadRequest)
 	}
 }
 

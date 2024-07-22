@@ -2,22 +2,26 @@ package config
 
 import (
 	"flag"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"os"
 )
 
 type Config struct {
-	Addr              string `env:"SERVER_ADDRESS"`
-	BaseURL           string `env:"BASE_URL"`
-	ShortStringLength int    `env:"SHORT_STRING_LENGTH"`
+	Addr              string        `env:"SERVER_ADDRESS"`
+	BaseURL           string        `env:"BASE_URL"`
+	ShortStringLength int           `env:"SHORT_STRING_LENGTH"`
+	LogLevel          zapcore.Level `env:"LOG_LEVEL"`
 }
 
 var Cfg = Config{
 	Addr:              "localhost:8080",
 	BaseURL:           "http://localhost:8080",
 	ShortStringLength: 6,
+	LogLevel:          zap.InfoLevel,
 }
 
-func ParseFlags() {
+func Init() {
 	flag.StringVar(&Cfg.Addr, "a", Cfg.Addr, "address and port to run server")
 	flag.StringVar(&Cfg.BaseURL, "b", Cfg.BaseURL, "base url")
 	flag.Parse()
