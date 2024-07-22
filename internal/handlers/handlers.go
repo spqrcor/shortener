@@ -1,16 +1,13 @@
-package main
+package handlers
 
 import (
 	"io"
 	"net/http"
-	"net/url"
-	"shortener/internal/app"
+	"shortener/internal/storage"
 	"strings"
 )
 
-const shortStringLength = 6
-
-func createShortHandler(store map[string]string, cfg Config) http.HandlerFunc {
+func CreateShortHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost || !strings.Contains(req.Header.Get("Content-Type"), "text/plain") {
 			res.WriteHeader(http.StatusBadRequest)
@@ -23,32 +20,40 @@ func createShortHandler(store map[string]string, cfg Config) http.HandlerFunc {
 			bodyBytes, err = io.ReadAll(req.Body)
 			if err != nil {
 				http.Error(res, err.Error(), http.StatusBadRequest)
+				return
 			}
 			err = req.Body.Close()
 			if err != nil {
 				http.Error(res, err.Error(), http.StatusBadRequest)
+				return
 			}
 		}
 
-		_, err = url.ParseRequestURI(string(bodyBytes))
-		if err == nil {
-			res.WriteHeader(http.StatusCreated)
-			res.Header().Set("Content-Type", "text/plain")
-			genURL := app.GenerateShortURL(cfg.baseURL, shortStringLength)
-			store[genURL] = string(bodyBytes)
-			_, err = res.Write([]byte(genURL))
-			if err != nil {
-				http.Error(res, err.Error(), http.StatusBadRequest)
-			}
+		genURL, err := storage.Add(string(bodyBytes))
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		res.WriteHeader(http.StatusCreated)
+		res.Header().Set("Content-Type", "text/plain")
+		_, err = res.Write([]byte(genURL))
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
 		}
 		res.WriteHeader(http.StatusBadRequest)
 	}
 }
 
-func searchShortHandler(store map[string]string, cfg Config) http.HandlerFunc {
+func SearchShortHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		redirectURL, ok := store[cfg.baseURL+req.URL.Path]
-		if req.Method == http.MethodGet && ok {
+		redirectURL, err := storage.Find(req.URL.Path)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if req.Method == http.MethodGet {
 			http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
 		} else {
 			res.WriteHeader(http.StatusBadRequest)

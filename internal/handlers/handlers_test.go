@@ -1,16 +1,14 @@
-package main
+package handlers
 
 import (
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"shortener/internal/storage"
 	"strings"
 	"testing"
 )
-
-var testStore = map[string]string{"http://localhost:8080/FaKeLiNk": "https://ya.ru"}
-var testCfg = Config{addr: ":8080", baseURL: "http://localhost:8080"}
 
 func Test_createShortHandler(t *testing.T) {
 	type want struct {
@@ -65,7 +63,7 @@ func Test_createShortHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, "/", strings.NewReader(tt.body))
 			request.Header.Add("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			h := createShortHandler(testStore, testCfg)
+			h := CreateShortHandler()
 			h(w, request)
 			result := w.Result()
 
@@ -116,18 +114,20 @@ func Test_searchShortHandler(t *testing.T) {
 			},
 		},
 	}
+	genUrl, _ := storage.Add("https://ya.ru")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.name == "GET current" {
+				tt.target = genUrl
+			}
 			request := httptest.NewRequest(tt.method, tt.target, nil)
 			w := httptest.NewRecorder()
-			h := searchShortHandler(testStore, testCfg)
+			h := SearchShortHandler()
 			h(w, request)
 			result := w.Result()
 
-			err := result.Body.Close()
-			if err != nil {
-				assert.Equal(t, tt.want.code, result.StatusCode)
-			}
+			_ = result.Body.Close()
+			assert.Equal(t, tt.want.code, result.StatusCode)
 		})
 	}
 }
