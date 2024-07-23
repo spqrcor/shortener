@@ -196,19 +196,20 @@ func Test_createJsonShortHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, "/", bytes.NewReader(tt.body))
 			request.Header.Add("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			h := CreateJsonShortHandler()
+			h := CreateJSONShortHandler()
 			h(w, request)
 			result := w.Result()
 
 			assert.Equal(t, tt.want.code, result.StatusCode)
 			if result.StatusCode == http.StatusCreated {
-				var output outputJsonData
+				var output outputJSONData
 				decoder := json.NewDecoder(result.Body)
 				err := decoder.Decode(&output)
 				if err == nil {
 					assert.NotEmpty(t, output.Result)
 				}
 			}
+			_ = result.Body.Close()
 		})
 	}
 }

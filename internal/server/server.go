@@ -11,7 +11,7 @@ import (
 func Start() {
 	r := chi.NewRouter()
 	r.Post("/", logger.RequestLogger(handlers.CreateShortHandler()))
-	r.Post("/api/shorten", logger.RequestLogger(handlers.CreateJsonShortHandler()))
+	r.Post("/api/shorten", logger.RequestLogger(handlers.CreateJSONShortHandler()))
 	r.Get("/{id}", logger.RequestLogger(handlers.SearchShortHandler()))
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)

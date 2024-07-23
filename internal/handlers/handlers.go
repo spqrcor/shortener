@@ -9,11 +9,11 @@ import (
 	"strings"
 )
 
-type inputJsonData struct {
+type inputJSONData struct {
 	Url string `json:"url,omitempty"`
 }
 
-type outputJsonData struct {
+type outputJSONData struct {
 	Result string `json:"result,omitempty"`
 }
 
@@ -70,14 +70,14 @@ func SearchShortHandler() http.HandlerFunc {
 	}
 }
 
-func CreateJsonShortHandler() http.HandlerFunc {
+func CreateJSONShortHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost || !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
 			res.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		var input inputJsonData
+		var input inputJSONData
 		var buf bytes.Buffer
 		_, err := buf.ReadFrom(req.Body)
 		if err != nil {
@@ -89,7 +89,7 @@ func CreateJsonShortHandler() http.HandlerFunc {
 			return
 		}
 
-		var output outputJsonData
+		var output outputJSONData
 		output.Result, err = storage.Add(input.Url)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
