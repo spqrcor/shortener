@@ -45,8 +45,8 @@ func CreateShortHandler() http.HandlerFunc {
 			return
 		}
 
-		res.WriteHeader(http.StatusCreated)
 		res.Header().Set("Content-Type", "text/plain")
+		res.WriteHeader(http.StatusCreated)
 		_, err = res.Write([]byte(genURL))
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
@@ -102,8 +102,8 @@ func CreateJSONShortHandler() http.HandlerFunc {
 			return
 		}
 
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		res.WriteHeader(http.StatusCreated)
-		res.Header().Set("Content-Type", "application/json")
 		_, err = res.Write(resp)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
