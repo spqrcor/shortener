@@ -10,7 +10,7 @@ import (
 )
 
 type inputJSONData struct {
-	Url string `json:"url,omitempty"`
+	URL string `json:"url,omitempty"`
 }
 
 type outputJSONData struct {
@@ -90,7 +90,7 @@ func CreateJSONShortHandler() http.HandlerFunc {
 		}
 
 		var output outputJSONData
-		output.Result, err = storage.Add(input.Url)
+		output.Result, err = storage.Add(input.URL)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
