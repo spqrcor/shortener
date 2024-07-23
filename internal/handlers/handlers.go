@@ -1,11 +1,21 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"shortener/internal/storage"
 	"strings"
 )
+
+type inputJsonData struct {
+	Url string `json:"url,omitempty"`
+}
+
+type outputJsonData struct {
+	Result string `json:"result,omitempty"`
+}
 
 func CreateShortHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -56,6 +66,48 @@ func SearchShortHandler() http.HandlerFunc {
 			http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
 		} else {
 			res.WriteHeader(http.StatusBadRequest)
+		}
+	}
+}
+
+func CreateJsonShortHandler() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodPost || !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		var input inputJsonData
+		var buf bytes.Buffer
+		_, err := buf.ReadFrom(req.Body)
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if err = json.Unmarshal(buf.Bytes(), &input); err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		var output outputJsonData
+		output.Result, err = storage.Add(input.Url)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		resp, err := json.Marshal(output)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		res.WriteHeader(http.StatusCreated)
+		res.Header().Set("Content-Type", "application/json")
+		_, err = res.Write(resp)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
 		}
 	}
 }

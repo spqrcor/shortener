@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
@@ -128,6 +130,85 @@ func Test_searchShortHandler(t *testing.T) {
 
 			_ = result.Body.Close()
 			assert.Equal(t, tt.want.code, result.StatusCode)
+		})
+	}
+}
+
+func Test_createJsonShortHandler(t *testing.T) {
+	type want struct {
+		code int
+	}
+	tests := []struct {
+		name        string
+		method      string
+		body        []byte
+		contentType string
+		want        want
+	}{
+		{
+			"NOT POST",
+			http.MethodGet,
+			[]byte(``),
+			"text/plain",
+			want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			"POST error contentType",
+			http.MethodPost,
+			[]byte(`{"url":"https://ya.ru"}`),
+			"text/plain",
+			want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			"POST error json param",
+			http.MethodPost,
+			[]byte(`{"url1":"https://ya.ru"}`),
+			"application/json",
+			want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			"POST error json value",
+			http.MethodPost,
+			[]byte(`{"url":"1https://ya.ru"}`),
+			"application/json",
+			want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			"POST current",
+			http.MethodPost,
+			[]byte(`{"url":"https://ya.ru"}`),
+			"application/json",
+			want{
+				code: http.StatusCreated,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(tt.method, "/", bytes.NewReader(tt.body))
+			request.Header.Add("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+			h := CreateJsonShortHandler()
+			h(w, request)
+			result := w.Result()
+
+			assert.Equal(t, tt.want.code, result.StatusCode)
+			if result.StatusCode == http.StatusCreated {
+				var output outputJsonData
+				decoder := json.NewDecoder(result.Body)
+				err := decoder.Decode(&output)
+				if err == nil {
+					assert.NotEmpty(t, output.Result)
+				}
+			}
 		})
 	}
 }
