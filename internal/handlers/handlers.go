@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -17,26 +18,35 @@ type outputJSONData struct {
 	Result string `json:"result,omitempty"`
 }
 
+type inputParams struct {
+	Method      string
+	ContentType string
+}
+
 func CreateShortHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodPost || !strings.Contains(req.Header.Get("Content-Type"), "text/plain") {
+		if !isValidInputParams(req, inputParams{Method: http.MethodPost, ContentType: "text/plain"}) {
 			res.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		var bodyBytes []byte
 		var err error
-		if req.Body != nil {
-			bodyBytes, err = io.ReadAll(req.Body)
-			if err != nil {
-				http.Error(res, err.Error(), http.StatusBadRequest)
-				return
-			}
-			err = req.Body.Close()
-			if err != nil {
-				http.Error(res, err.Error(), http.StatusBadRequest)
-				return
-			}
+		body, err := getBody(req)
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		bodyBytes, err = io.ReadAll(body)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err = req.Body.Close()
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		genURL, err := storage.Add(string(bodyBytes))
@@ -72,14 +82,20 @@ func SearchShortHandler() http.HandlerFunc {
 
 func CreateJSONShortHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodPost || !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
+		if !isValidInputParams(req, inputParams{Method: http.MethodPost, ContentType: "application/json"}) {
 			res.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		var input inputJSONData
 		var buf bytes.Buffer
-		_, err := buf.ReadFrom(req.Body)
+		body, err := getBody(req)
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		_, err = buf.ReadFrom(body)
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
 			return
@@ -110,4 +126,33 @@ func CreateJSONShortHandler() http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func isValidInputParams(req *http.Request, params inputParams) bool {
+	if req.Method != params.Method {
+		return false
+	}
+	if req.Header.Get(`Content-Encoding`) != `gzip` && !strings.Contains(req.Header.Get("Content-Type"), params.ContentType) {
+		return false
+	}
+	return true
+}
+
+func getBody(req *http.Request) (io.Reader, error) {
+	var reader io.Reader
+
+	if req.Header.Get(`Content-Encoding`) == `gzip` {
+		gz, err := gzip.NewReader(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		reader = gz
+		err = gz.Close()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		reader = req.Body
+	}
+	return reader, nil
 }

@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 	"shortener/internal/config"
 	"shortener/internal/handlers"
@@ -10,6 +11,8 @@ import (
 
 func Start() {
 	r := chi.NewRouter()
+	r.Use(middleware.Compress(5, "application/json", "text/html"))
+
 	r.Post("/", logger.RequestLogger(handlers.CreateShortHandler()))
 	r.Post("/api/shorten", logger.RequestLogger(handlers.CreateJSONShortHandler()))
 	r.Get("/{id}", logger.RequestLogger(handlers.SearchShortHandler()))
