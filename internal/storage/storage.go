@@ -19,7 +19,9 @@ func Init() {
 		if err != nil {
 			logger.Log.Fatal(err.Error())
 		}
-		err = file.Close()
+		if err := file.Close(); err != nil {
+			logger.Log.Fatal(err.Error())
+		}
 	}
 
 	if len(data) == 0 {
@@ -35,7 +37,7 @@ func updateFileStorage() {
 	if err != nil {
 		logger.Log.Fatal(err.Error())
 	}
-	if err = os.Truncate(config.Cfg.FileStoragePath, 0); err != nil {
+	if err := os.Truncate(config.Cfg.FileStoragePath, 0); err != nil {
 		logger.Log.Fatal(err.Error())
 	}
 	if err := os.WriteFile(config.Cfg.FileStoragePath, x, 0666); err != nil {
