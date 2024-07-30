@@ -1,23 +1,16 @@
 package main
 
 import (
-	"github.com/go-chi/chi/v5"
-	"log"
-	"net/http"
+	"shortener/internal/config"
+	"shortener/internal/logger"
+	"shortener/internal/server"
+	"shortener/internal/storage"
 )
 
 func main() {
-	store := map[string]string{}
-	cfg := parseFlags()
-	r := chi.NewRouter()
-	r.Post("/", createShortHandler(store, cfg))
-	r.Get("/{id}", searchShortHandler(store, cfg))
-	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {
-		res.WriteHeader(http.StatusBadRequest)
-	})
+	config.Init()
+	logger.Init()
+	storage.Init()
 
-	err := http.ListenAndServe(cfg.addr, r)
-	if err != nil {
-		log.Fatal(err)
-	}
+	server.Start()
 }
