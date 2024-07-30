@@ -213,3 +213,61 @@ func Test_createJsonShortHandler(t *testing.T) {
 		})
 	}
 }
+
+func Test_isValidInputParams(t *testing.T) {
+	tests := []struct {
+		name                   string
+		requestMethod          string
+		currentMethod          string
+		requestContentType     string
+		currentContentType     string
+		requestContentEncoding string
+		want                   bool
+	}{
+		{
+			"NOT POST",
+			http.MethodGet,
+			http.MethodPost,
+			"text/plain",
+			"text/plain",
+			"",
+			false,
+		}, {
+			"NOT error contentType",
+			http.MethodPost,
+			http.MethodPost,
+			"text/xml",
+			"text/plain",
+			"",
+			false,
+		},
+		{
+			"POST current",
+			http.MethodPost,
+			http.MethodPost,
+			"text/plain",
+			"text/plain",
+			"",
+			true,
+		},
+		{
+			"POST current with encoding",
+			http.MethodPost,
+			http.MethodPost,
+			"text/plain",
+			"text/plain",
+			"gzip",
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(tt.requestMethod, "/", strings.NewReader(""))
+			request.Header.Add("Content-Type", tt.requestContentType)
+			if tt.requestContentEncoding != "" {
+				request.Header.Add("Content-Encoding", tt.requestContentEncoding)
+			}
+			assert.Equal(t, tt.want, isValidInputParams(request, inputParams{Method: tt.currentMethod, ContentType: tt.currentContentType}))
+		})
+	}
+}

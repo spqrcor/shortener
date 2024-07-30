@@ -1,8 +1,10 @@
 package server
 
 import (
+	"compress/gzip"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"log"
 	"net/http"
 	"shortener/internal/config"
 	"shortener/internal/handlers"
@@ -12,6 +14,7 @@ import (
 func Start() {
 	r := chi.NewRouter()
 	r.Use(middleware.Compress(5, "application/json", "text/html"))
+	r.Use(getBodyMiddleware)
 
 	r.Post("/", logger.RequestLogger(handlers.CreateShortHandler()))
 	r.Post("/api/shorten", logger.RequestLogger(handlers.CreateJSONShortHandler()))
@@ -20,8 +23,21 @@ func Start() {
 		res.WriteHeader(http.StatusBadRequest)
 	})
 
-	err := http.ListenAndServe(config.Cfg.Addr, r)
-	if err != nil {
-		logger.Log.Fatal(err.Error())
-	}
+	log.Fatal(http.ListenAndServe(config.Cfg.Addr, r))
+}
+
+func getBodyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if r.Header.Get(`Content-Encoding`) == `gzip` {
+			gz, err := gzip.NewReader(r.Body)
+			if err == nil {
+				r.Body = gz
+			}
+			err = gz.Close()
+			if err != nil {
+				logger.Log.Error(err.Error())
+			}
+		}
+		next.ServeHTTP(rw, r)
+	})
 }

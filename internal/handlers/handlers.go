@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -31,14 +30,9 @@ func CreateShortHandler() http.HandlerFunc {
 		}
 
 		var bodyBytes []byte
-		var err error
-		body, err := getBody(req)
-		if err != nil {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		body := req.Body
 
-		bodyBytes, err = io.ReadAll(body)
+		bodyBytes, err := io.ReadAll(body)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
@@ -89,13 +83,9 @@ func CreateJSONShortHandler() http.HandlerFunc {
 
 		var input inputJSONData
 		var buf bytes.Buffer
-		body, err := getBody(req)
-		if err != nil {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		body := req.Body
 
-		_, err = buf.ReadFrom(body)
+		_, err := buf.ReadFrom(body)
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
 			return
@@ -136,23 +126,4 @@ func isValidInputParams(req *http.Request, params inputParams) bool {
 		return false
 	}
 	return true
-}
-
-func getBody(req *http.Request) (io.Reader, error) {
-	var reader io.Reader
-
-	if req.Header.Get(`Content-Encoding`) == `gzip` {
-		gz, err := gzip.NewReader(req.Body)
-		if err != nil {
-			return nil, err
-		}
-		reader = gz
-		err = gz.Close()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		reader = req.Body
-	}
-	return reader, nil
 }
