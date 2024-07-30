@@ -65,8 +65,7 @@ func Test_createShortHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, "/", strings.NewReader(tt.body))
 			request.Header.Add("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			h := CreateShortHandler()
-			h(w, request)
+			CreateShortHandler(w, request)
 			result := w.Result()
 
 			assert.Equal(t, tt.want.code, result.StatusCode)
@@ -124,8 +123,7 @@ func Test_searchShortHandler(t *testing.T) {
 			}
 			request := httptest.NewRequest(tt.method, tt.target, nil)
 			w := httptest.NewRecorder()
-			h := SearchShortHandler()
-			h(w, request)
+			SearchShortHandler(w, request)
 			result := w.Result()
 
 			_ = result.Body.Close()
@@ -196,8 +194,7 @@ func Test_createJsonShortHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, "/", bytes.NewReader(tt.body))
 			request.Header.Add("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			h := CreateJSONShortHandler()
-			h(w, request)
+			CreateJSONShortHandler(w, request)
 			result := w.Result()
 
 			assert.Equal(t, tt.want.code, result.StatusCode)

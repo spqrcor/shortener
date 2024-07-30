@@ -15,9 +15,9 @@ func Start() {
 	r.Use(middleware.Compress(5, "application/json", "text/html"))
 	r.Use(getBodyMiddleware)
 
-	r.Post("/", handlers.CreateShortHandler())
-	r.Post("/api/shorten", handlers.CreateJSONShortHandler())
-	r.Get("/{id}", handlers.SearchShortHandler())
+	r.Post("/", handlers.CreateShortHandler)
+	r.Post("/api/shorten", handlers.CreateJSONShortHandler)
+	r.Get("/{id}", handlers.SearchShortHandler)
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 	})
