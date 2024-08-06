@@ -21,8 +21,8 @@ var Cfg = Config{
 	BaseURL:           "http://localhost:8080",
 	ShortStringLength: 6,
 	LogLevel:          zap.InfoLevel,
-	FileStoragePath:   os.TempDir() + "/storage.json",
-	DatabaseDSN:       "postgres://postgres:postgres@localhost:5432/demo2",
+	FileStoragePath:   "",
+	DatabaseDSN:       "",
 }
 
 func Init() {

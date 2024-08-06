@@ -60,6 +60,7 @@ func Test_createShortHandler(t *testing.T) {
 			},
 		},
 	}
+	storage.Init()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.method, "/", strings.NewReader(tt.body))
@@ -115,7 +116,8 @@ func Test_searchShortHandler(t *testing.T) {
 			},
 		},
 	}
-	genURL, _ := storage.Add("https://ya.ru")
+
+	genURL, _ := storage.Source.Add("https://ya.ru")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.name == "GET current" {
