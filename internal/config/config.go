@@ -13,6 +13,7 @@ type Config struct {
 	ShortStringLength int           `env:"SHORT_STRING_LENGTH"`
 	LogLevel          zapcore.Level `env:"LOG_LEVEL"`
 	FileStoragePath   string        `env:"FILE_STORAGE_PATH"`
+	DatabaseDSN       string        `env:"DATABASE_DSN"`
 }
 
 var Cfg = Config{
@@ -21,17 +22,20 @@ var Cfg = Config{
 	ShortStringLength: 6,
 	LogLevel:          zap.InfoLevel,
 	FileStoragePath:   os.TempDir() + "/storage.json",
+	DatabaseDSN:       "postgres://postgres:postgres@localhost:5432/demo2",
 }
 
 func Init() {
 	flag.StringVar(&Cfg.Addr, "a", Cfg.Addr, "address and port to run server")
 	flag.StringVar(&Cfg.BaseURL, "b", Cfg.BaseURL, "base url")
-	flag.StringVar(&Cfg.BaseURL, "f", Cfg.BaseURL, "file storage path")
+	flag.StringVar(&Cfg.FileStoragePath, "f", Cfg.FileStoragePath, "file storage path")
+	flag.StringVar(&Cfg.DatabaseDSN, "d", Cfg.DatabaseDSN, "database dsn")
 	flag.Parse()
 
 	serverAddressEnv, findAddress := os.LookupEnv("SERVER_ADDRESS")
 	serverBaseURLEnv, findBaseURL := os.LookupEnv("BASE_URL")
 	serverStoragePath, findStoragePath := os.LookupEnv("FILE_STORAGE_PATH")
+	serverDatabaseDSN, findDatabaseDSN := os.LookupEnv("DATABASE_DSN")
 
 	if findAddress {
 		Cfg.Addr = serverAddressEnv
@@ -41,5 +45,8 @@ func Init() {
 	}
 	if findStoragePath {
 		Cfg.FileStoragePath = serverStoragePath
+	}
+	if findDatabaseDSN {
+		Cfg.DatabaseDSN = serverDatabaseDSN
 	}
 }

@@ -18,6 +18,7 @@ func Start() {
 	r.Post("/", handlers.CreateShortHandler)
 	r.Post("/api/shorten", handlers.CreateJSONShortHandler)
 	r.Get("/{id}", handlers.SearchShortHandler)
+	r.Get("/ping", handlers.PingHandler)
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 	})
