@@ -112,6 +112,20 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func PingHandler(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err := storage.Connect()
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res.WriteHeader(http.StatusOK)
+}
+
 func isValidInputParams(req *http.Request, params inputParams) bool {
 	if req.Method != params.Method {
 		return false
