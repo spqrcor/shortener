@@ -41,7 +41,7 @@ func (m MemoryStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputPara
 			return nil, err
 		}
 		m.Store[genURL] = inputURL.URL
-		output = append(output, BatchOutputParams{CorrelationId: inputURL.CorrelationId, ShortURL: genURL})
+		output = append(output, BatchOutputParams{CorrelationID: inputURL.CorrelationID, ShortURL: genURL})
 	}
 	return output, nil
 }

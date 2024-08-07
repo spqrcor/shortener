@@ -74,7 +74,7 @@ func (d DBStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, 
 			return nil, err
 		}
 		vals = append(vals, genURL, row.URL)
-		output = append(output, BatchOutputParams{CorrelationId: row.CorrelationId, ShortURL: genURL})
+		output = append(output, BatchOutputParams{CorrelationID: row.CorrelationID, ShortURL: genURL})
 	}
 
 	stmt, _ := d.DB.Prepare(ReplaceSQL("INSERT INTO url_list(short_url, url) VALUES %s", "(?, ?)", len(inputURLs)) +

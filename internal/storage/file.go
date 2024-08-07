@@ -75,7 +75,7 @@ func (f FileStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams
 			return nil, err
 		}
 		f.Store[genURL] = inputURL.URL
-		output = append(output, BatchOutputParams{CorrelationId: inputURL.CorrelationId, ShortURL: genURL})
+		output = append(output, BatchOutputParams{CorrelationID: inputURL.CorrelationID, ShortURL: genURL})
 	}
 	updateFileStorage(f.Store)
 	return output, nil
