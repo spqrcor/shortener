@@ -138,6 +138,10 @@ func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	output, err := storage.Source.BatchAdd(input)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
 	resp, err := json.Marshal(output)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
