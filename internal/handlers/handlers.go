@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"shortener/internal/config"
+	"shortener/internal/db"
 	"shortener/internal/storage"
 	"strings"
 )
@@ -36,13 +38,12 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = req.Body.Close()
-	if err != nil {
+	if err = req.Body.Close(); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	genURL, err := storage.Add(string(bodyBytes))
+	genURL, err := storage.Source.Add(string(bodyBytes))
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -58,7 +59,7 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func SearchShortHandler(res http.ResponseWriter, req *http.Request) {
-	redirectURL, err := storage.Find(req.URL.Path)
+	redirectURL, err := storage.Source.Find(req.URL.Path)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -91,7 +92,7 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	var output outputJSONData
-	output.Result, err = storage.Add(input.URL)
+	output.Result, err = storage.Source.Add(input.URL)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -110,6 +111,64 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
+}
+
+func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
+	if !isValidInputParams(req, inputParams{Method: http.MethodPost, ContentType: "application/json"}) {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var input []storage.BatchInputParams
+	var buf bytes.Buffer
+	body := req.Body
+
+	_, err := buf.ReadFrom(body)
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err = json.Unmarshal(buf.Bytes(), &input); err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if len(input) == 0 {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	output, err := storage.Source.BatchAdd(input)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	resp, err := json.Marshal(output)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	res.WriteHeader(http.StatusCreated)
+	_, err = res.Write(resp)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func PingHandler(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet || config.Cfg.DatabaseDSN == "" {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err := db.Connect()
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res.WriteHeader(http.StatusOK)
 }
 
 func isValidInputParams(req *http.Request, params inputParams) bool {
