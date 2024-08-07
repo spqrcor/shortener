@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"shortener/internal/config"
 	"shortener/internal/db"
 	"shortener/internal/storage"
 	"strings"
@@ -113,7 +114,7 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func PingHandler(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
+	if req.Method != http.MethodGet || config.Cfg.DatabaseDSN == "" {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
