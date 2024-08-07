@@ -65,21 +65,23 @@ func ReplaceSQL(stmt, pattern string, len int) string {
 	return strings.TrimSuffix(stmt, ",")
 }
 
-func (d DBStorage) BatchAdd(inputURLs []BatchParams) error {
-	if len(inputURLs) == 0 {
-		return errors.New("отсутствуют записи")
-	}
-
+func (d DBStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
+	var output []BatchOutputParams
 	vals := []interface{}{}
 	for _, row := range inputURLs {
-		vals = append(vals, row.ShortURL, row.URL)
+		genURL, err := app.CreateShortURL(row.URL)
+		if err != nil {
+			return nil, err
+		}
+		vals = append(vals, genURL, row.URL)
+		output = append(output, BatchOutputParams{CorrelationId: row.CorrelationId, ShortURL: genURL})
 	}
 
 	stmt, _ := d.DB.Prepare(ReplaceSQL("INSERT INTO url_list(short_url, url) VALUES %s", "(?, ?)", len(inputURLs)) +
 		" ON CONFLICT(short_url) DO UPDATE SET url = EXCLUDED.url, updated_at = NOW()")
 	_, err := stmt.Exec(vals...)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return output, nil
 }

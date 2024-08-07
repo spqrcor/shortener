@@ -119,7 +119,7 @@ func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var input []storage.BatchParams
+	var input []storage.BatchInputParams
 	var buf bytes.Buffer
 	body := req.Body
 
@@ -132,13 +132,25 @@ func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	if len(input) == 0 {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-	err = storage.Source.BatchAdd(input)
+	output, err := storage.Source.BatchAdd(input)
+	resp, err := json.Marshal(output)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	res.Header().Set("Content-Type", "application/json; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
+	_, err = res.Write(resp)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
 }
 
 func PingHandler(res http.ResponseWriter, req *http.Request) {

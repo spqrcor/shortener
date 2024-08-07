@@ -7,12 +7,17 @@ import (
 type Storage interface {
 	Add(inputURL string) (string, error)
 	Find(key string) (string, error)
-	BatchAdd(inputURLs []BatchParams) error
+	BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, error)
 }
 
-type BatchParams struct {
-	ShortURL string `json:"correlation_id"`
-	URL      string `json:"original_url"`
+type BatchInputParams struct {
+	CorrelationId string `json:"correlation_id"`
+	URL           string `json:"original_url"`
+}
+
+type BatchOutputParams struct {
+	CorrelationId string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
 }
 
 var Source Storage

@@ -67,10 +67,16 @@ func updateFileStorage(store map[string]string) {
 	}
 }
 
-func (f FileStorage) BatchAdd(inputURLs []BatchParams) error {
+func (f FileStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
+	var output []BatchOutputParams
 	for _, inputURL := range inputURLs {
-		f.Store[inputURL.ShortURL] = inputURL.URL
+		genURL, err := app.CreateShortURL(inputURL.URL)
+		if err != nil {
+			return nil, err
+		}
+		f.Store[genURL] = inputURL.URL
+		output = append(output, BatchOutputParams{CorrelationId: inputURL.CorrelationId, ShortURL: genURL})
 	}
 	updateFileStorage(f.Store)
-	return nil
+	return output, nil
 }

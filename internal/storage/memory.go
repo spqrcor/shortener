@@ -33,9 +33,15 @@ func (m MemoryStorage) Find(key string) (string, error) {
 	return "", errors.New("ключ не найден")
 }
 
-func (m MemoryStorage) BatchAdd(inputURLs []BatchParams) error {
+func (m MemoryStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
+	var output []BatchOutputParams
 	for _, inputURL := range inputURLs {
-		m.Store[inputURL.ShortURL] = inputURL.URL
+		genURL, err := app.CreateShortURL(inputURL.URL)
+		if err != nil {
+			return nil, err
+		}
+		m.Store[genURL] = inputURL.URL
+		output = append(output, BatchOutputParams{CorrelationId: inputURL.CorrelationId, ShortURL: genURL})
 	}
-	return nil
+	return output, nil
 }
