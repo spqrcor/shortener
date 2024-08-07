@@ -25,12 +25,11 @@ func CreateFileStorage() {
 		}
 	}
 
-	if len(data) == 0 {
-		return
-	}
 	fileData := map[string]string{}
-	if err := json.Unmarshal([]byte(data), &fileData); err != nil {
-		logger.Log.Fatal(err.Error())
+	if len(data) != 0 {
+		if err := json.Unmarshal([]byte(data), &fileData); err != nil {
+			logger.Log.Fatal(err.Error())
+		}
 	}
 	Source = FileStorage{
 		Store: fileData,
