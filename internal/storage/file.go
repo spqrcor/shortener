@@ -66,3 +66,11 @@ func updateFileStorage(store map[string]string) {
 		logger.Log.Fatal(err.Error())
 	}
 }
+
+func (f FileStorage) BatchAdd(inputURLs []BatchParams) error {
+	for _, inputURL := range inputURLs {
+		f.Store[inputURL.ShortURL] = inputURL.URL
+	}
+	updateFileStorage(f.Store)
+	return nil
+}

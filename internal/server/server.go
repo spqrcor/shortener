@@ -17,6 +17,7 @@ func Start() {
 
 	r.Post("/", handlers.CreateShortHandler)
 	r.Post("/api/shorten", handlers.CreateJSONShortHandler)
+	r.Post("/api/shorten/batch", handlers.CreateJSONBatchHandler)
 	r.Get("/{id}", handlers.SearchShortHandler)
 	r.Get("/ping", handlers.PingHandler)
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {

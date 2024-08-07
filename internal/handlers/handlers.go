@@ -113,6 +113,34 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
+	if !isValidInputParams(req, inputParams{Method: http.MethodPost, ContentType: "application/json"}) {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var input []storage.BatchParams
+	var buf bytes.Buffer
+	body := req.Body
+
+	_, err := buf.ReadFrom(body)
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err = json.Unmarshal(buf.Bytes(), &input); err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = storage.Source.BatchAdd(input)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	res.WriteHeader(http.StatusCreated)
+}
+
 func PingHandler(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet || config.Cfg.DatabaseDSN == "" {
 		res.WriteHeader(http.StatusInternalServerError)

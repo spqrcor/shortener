@@ -32,3 +32,10 @@ func (m MemoryStorage) Find(key string) (string, error) {
 	}
 	return "", errors.New("ключ не найден")
 }
+
+func (m MemoryStorage) BatchAdd(inputURLs []BatchParams) error {
+	for _, inputURL := range inputURLs {
+		m.Store[inputURL.ShortURL] = inputURL.URL
+	}
+	return nil
+}
