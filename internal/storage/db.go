@@ -18,6 +18,9 @@ func CreateDBStorage() {
 	if err != nil {
 		logger.Log.Fatal(err.Error())
 	}
+
+	db.Migrate(res)
+
 	Source = DBStorage{
 		DB: res,
 	}
