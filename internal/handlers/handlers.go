@@ -43,14 +43,19 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	successStatus := http.StatusCreated
 	genURL, err := storage.Source.Add(string(bodyBytes))
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
+		if err.Error() == "URL уже присутствует в базе" {
+			successStatus = http.StatusConflict
+		} else {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	res.Header().Set("Content-Type", "text/plain")
-	res.WriteHeader(http.StatusCreated)
+	res.WriteHeader(successStatus)
 	_, err = res.Write([]byte(genURL))
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
@@ -92,10 +97,15 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	var output outputJSONData
+	successStatus := http.StatusCreated
 	output.Result, err = storage.Source.Add(input.URL)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
+		if err.Error() == "URL уже присутствует в базе" {
+			successStatus = http.StatusConflict
+		} else {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	resp, err := json.Marshal(output)
@@ -105,7 +115,7 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-	res.WriteHeader(http.StatusCreated)
+	res.WriteHeader(successStatus)
 	_, err = res.Write(resp)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)

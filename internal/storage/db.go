@@ -35,10 +35,12 @@ func (d DBStorage) Add(inputURL string) (string, error) {
 		return "", err
 	}
 
-	insertDynStmt := "INSERT INTO url_list (short_url, url) VALUES ($1, $2)"
-	_, err = d.DB.Exec(insertDynStmt, genURL, inputURL)
+	baseShortURL := ""
+	err = d.DB.QueryRow("INSERT INTO url_list (short_url, url) VALUES ($1, $2)  ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url", genURL, inputURL).Scan(&baseShortURL)
 	if err != nil {
 		return "", err
+	} else if baseShortURL != genURL {
+		return baseShortURL, errors.New("URL уже присутствует в базе")
 	}
 	return genURL, nil
 }
@@ -53,7 +55,7 @@ func (d DBStorage) Find(key string) (string, error) {
 	return originalURL, nil
 }
 
-func ReplaceSQL(stmt, pattern string, len int) string {
+func replaceSQL(stmt, pattern string, len int) string {
 	pattern += ","
 	stmt = fmt.Sprintf(stmt, strings.Repeat(pattern, len))
 	n := 0
@@ -77,7 +79,7 @@ func (d DBStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, 
 		output = append(output, BatchOutputParams{CorrelationID: row.CorrelationID, ShortURL: genURL})
 	}
 
-	stmt, _ := d.DB.Prepare(ReplaceSQL("INSERT INTO url_list(short_url, url) VALUES %s", "(?, ?)", len(inputURLs)) +
+	stmt, _ := d.DB.Prepare(replaceSQL("INSERT INTO url_list(short_url, url) VALUES %s", "(?, ?)", len(inputURLs)) +
 		" ON CONFLICT(short_url) DO UPDATE SET url = EXCLUDED.url, updated_at = NOW()")
 	_, err := stmt.Exec(vals...)
 	if err != nil {
