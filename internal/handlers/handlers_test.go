@@ -292,7 +292,7 @@ func TestPingHandler(t *testing.T) {
 		},
 	}
 	if config.Cfg.DatabaseDSN == "" {
-		return
+		t.Skip("Skipping testing...")
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
