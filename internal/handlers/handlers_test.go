@@ -298,6 +298,7 @@ func TestPingHandler(t *testing.T) {
 			PingHandler(w, request)
 			result := w.Result()
 			assert.Equal(t, tt.responceStatus, result.StatusCode)
+			_ = result.Body.Close()
 		})
 	}
 }
