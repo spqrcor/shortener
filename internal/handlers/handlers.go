@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"shortener/internal/config"
@@ -47,7 +48,7 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 	successStatus := http.StatusCreated
 	genURL, err := storage.Source.Add(context.Background(), string(bodyBytes))
 	if err != nil {
-		if err.Error() == "URL уже присутствует в базе" {
+		if errors.Is(err, storage.UrlExists) {
 			successStatus = http.StatusConflict
 		} else {
 			http.Error(res, err.Error(), http.StatusBadRequest)
@@ -101,7 +102,7 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 	successStatus := http.StatusCreated
 	output.Result, err = storage.Source.Add(context.Background(), input.URL)
 	if err != nil {
-		if err.Error() == "URL уже присутствует в базе" {
+		if errors.Is(err, storage.UrlExists) {
 			successStatus = http.StatusConflict
 		} else {
 			http.Error(res, err.Error(), http.StatusBadRequest)

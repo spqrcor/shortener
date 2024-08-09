@@ -18,6 +18,8 @@ type DBStorage struct {
 	DB *sql.DB
 }
 
+var UrlExists = fmt.Errorf("url exists")
+
 func CreateDBStorage() {
 	res, err := db.Connect()
 	if err != nil {
@@ -44,7 +46,7 @@ func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
 	if err != nil {
 		return "", err
 	} else if baseShortURL != genURL {
-		return baseShortURL, errors.New("URL уже присутствует в базе")
+		return baseShortURL, UrlExists
 	}
 	return genURL, nil
 }

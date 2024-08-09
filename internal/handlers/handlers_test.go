@@ -61,7 +61,7 @@ func Test_createShortHandler(t *testing.T) {
 			},
 		},
 	}
-	storage.Init()
+	storage.CreateMemoryStorage()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.method, "/", strings.NewReader(tt.body))
@@ -117,7 +117,7 @@ func Test_searchShortHandler(t *testing.T) {
 			},
 		},
 	}
-
+	storage.CreateMemoryStorage()
 	genURL, _ := storage.Source.Add(context.Background(), "https://ya.ru")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -192,6 +192,7 @@ func Test_createJsonShortHandler(t *testing.T) {
 			},
 		},
 	}
+	storage.CreateMemoryStorage()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.method, "/", bytes.NewReader(tt.body))
@@ -268,6 +269,106 @@ func Test_isValidInputParams(t *testing.T) {
 				request.Header.Add("Content-Encoding", tt.requestContentEncoding)
 			}
 			assert.Equal(t, tt.want, isValidInputParams(request, inputParams{Method: tt.currentMethod, ContentType: tt.currentContentType}))
+		})
+	}
+}
+
+func TestPingHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		requestMethod  string
+		responceStatus int
+	}{
+		{
+			"NOT current",
+			http.MethodGet,
+			http.StatusOK,
+		},
+		{
+			"GET current",
+			http.MethodPost,
+			http.StatusInternalServerError,
+		},
+	}
+	storage.CreateMemoryStorage()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(tt.requestMethod, "/ping", strings.NewReader(""))
+			w := httptest.NewRecorder()
+			PingHandler(w, request)
+			result := w.Result()
+			assert.Equal(t, tt.responceStatus, result.StatusCode)
+		})
+	}
+}
+
+func TestCreateJSONBatchHandler(t *testing.T) {
+	type want struct {
+		code int
+	}
+	tests := []struct {
+		name        string
+		method      string
+		body        []byte
+		contentType string
+		want        want
+	}{
+		{
+			"NOT POST",
+			http.MethodGet,
+			[]byte(``),
+			"text/plain",
+			want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			"POST error contentType",
+			http.MethodPost,
+			[]byte(`{"url":"https://ya.ru"}`),
+			"text/plain",
+			want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			"POST empty rows",
+			http.MethodPost,
+			[]byte(`{}`),
+			"application/json",
+			want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			"POST current",
+			http.MethodPost,
+			[]byte(`[{"correlation_id": "b9253cb9-03e9-4850-a3cb-16e84e9f8a37", "original_url": "http://lenta.ru"}]`),
+			"application/json",
+			want{
+				code: http.StatusCreated,
+			},
+		},
+	}
+	storage.CreateMemoryStorage()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(tt.method, "/api/shorten/batch", bytes.NewReader(tt.body))
+			request.Header.Add("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+			CreateJSONBatchHandler(w, request)
+			result := w.Result()
+
+			assert.Equal(t, tt.want.code, result.StatusCode)
+			if result.StatusCode == http.StatusCreated {
+				var output outputJSONData
+				decoder := json.NewDecoder(result.Body)
+				err := decoder.Decode(&output)
+				if err == nil {
+					assert.NotEmpty(t, output.Result)
+				}
+			}
+			_ = result.Body.Close()
 		})
 	}
 }
