@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"shortener/internal/config"
 	"shortener/internal/storage"
 	"strings"
 	"testing"
@@ -280,17 +281,19 @@ func TestPingHandler(t *testing.T) {
 		responceStatus int
 	}{
 		{
-			"NOT current",
+			"GET current",
 			http.MethodGet,
 			http.StatusOK,
 		},
 		{
-			"GET current",
+			"NOT current",
 			http.MethodPost,
 			http.StatusInternalServerError,
 		},
 	}
-	storage.CreateMemoryStorage()
+	if config.Cfg.DatabaseDSN == "" {
+		return
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.requestMethod, "/ping", strings.NewReader(""))
