@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
+	"shortener/internal/config"
 	"testing"
 )
 
@@ -22,6 +23,9 @@ func TestFileStorage_Add(t *testing.T) {
 			"http://ya.ru",
 			true,
 		},
+	}
+	if config.Cfg.FileStoragePath == "" {
+		t.Skip("Skipping testing...")
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,6 +64,9 @@ func TestFileStorage_BatchAdd(t *testing.T) {
 			},
 			true,
 		},
+	}
+	if config.Cfg.FileStoragePath == "" {
+		t.Skip("Skipping testing...")
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
