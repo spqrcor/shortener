@@ -18,8 +18,7 @@ func getBodyMiddleware(next http.Handler) http.Handler {
 			} else {
 				r.Body = gz
 			}
-			err = gz.Close()
-			if err != nil {
+			if err = gz.Close(); err != nil {
 				logger.Log.Error(err.Error())
 			}
 		}
