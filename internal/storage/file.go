@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -36,7 +37,7 @@ func CreateFileStorage() {
 	}
 }
 
-func (f FileStorage) Add(inputURL string) (string, error) {
+func (f FileStorage) Add(ctx context.Context, inputURL string) (string, error) {
 	genURL, err := app.CreateShortURL(inputURL)
 	if err != nil {
 		return "", err
@@ -46,7 +47,7 @@ func (f FileStorage) Add(inputURL string) (string, error) {
 	return genURL, nil
 }
 
-func (f FileStorage) Find(key string) (string, error) {
+func (f FileStorage) Find(ctx context.Context, key string) (string, error) {
 	redirectURL, ok := f.Store[config.Cfg.BaseURL+key]
 	if ok {
 		return redirectURL, nil
@@ -67,7 +68,7 @@ func updateFileStorage(store map[string]string) {
 	}
 }
 
-func (f FileStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
+func (f FileStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
 	var output []BatchOutputParams
 	for _, inputURL := range inputURLs {
 		genURL, err := app.CreateShortURL(inputURL.URL)

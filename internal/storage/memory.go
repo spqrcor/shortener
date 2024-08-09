@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"shortener/internal/app"
 	"shortener/internal/config"
@@ -16,7 +17,7 @@ func CreateMemoryStorage() {
 	}
 }
 
-func (m MemoryStorage) Add(inputURL string) (string, error) {
+func (m MemoryStorage) Add(ctx context.Context, inputURL string) (string, error) {
 	genURL, err := app.CreateShortURL(inputURL)
 	if err != nil {
 		return "", err
@@ -25,7 +26,7 @@ func (m MemoryStorage) Add(inputURL string) (string, error) {
 	return genURL, nil
 }
 
-func (m MemoryStorage) Find(key string) (string, error) {
+func (m MemoryStorage) Find(ctx context.Context, key string) (string, error) {
 	redirectURL, ok := m.Store[config.Cfg.BaseURL+key]
 	if ok {
 		return redirectURL, nil
@@ -33,7 +34,7 @@ func (m MemoryStorage) Find(key string) (string, error) {
 	return "", errors.New("ключ не найден")
 }
 
-func (m MemoryStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
+func (m MemoryStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
 	var output []BatchOutputParams
 	for _, inputURL := range inputURLs {
 		genURL, err := app.CreateShortURL(inputURL.URL)

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -44,7 +45,7 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	successStatus := http.StatusCreated
-	genURL, err := storage.Source.Add(string(bodyBytes))
+	genURL, err := storage.Source.Add(context.Background(), string(bodyBytes))
 	if err != nil {
 		if err.Error() == "URL уже присутствует в базе" {
 			successStatus = http.StatusConflict
@@ -64,7 +65,7 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func SearchShortHandler(res http.ResponseWriter, req *http.Request) {
-	redirectURL, err := storage.Source.Find(req.URL.Path)
+	redirectURL, err := storage.Source.Find(context.Background(), req.URL.Path)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -98,7 +99,7 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 
 	var output outputJSONData
 	successStatus := http.StatusCreated
-	output.Result, err = storage.Source.Add(input.URL)
+	output.Result, err = storage.Source.Add(context.Background(), input.URL)
 	if err != nil {
 		if err.Error() == "URL уже присутствует в базе" {
 			successStatus = http.StatusConflict
@@ -147,7 +148,7 @@ func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	output, err := storage.Source.BatchAdd(input)
+	output, err := storage.Source.BatchAdd(context.Background(), input)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return

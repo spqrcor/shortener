@@ -1,13 +1,14 @@
 package storage
 
 import (
+	"context"
 	"shortener/internal/config"
 )
 
 type Storage interface {
-	Add(inputURL string) (string, error)
-	Find(key string) (string, error)
-	BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, error)
+	Add(ctx context.Context, inputURL string) (string, error)
+	Find(ctx context.Context, key string) (string, error)
+	BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error)
 }
 
 type BatchInputParams struct {

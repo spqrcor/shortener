@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"shortener/internal/logger"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type DBStorage struct {
@@ -29,14 +31,16 @@ func CreateDBStorage() {
 	}
 }
 
-func (d DBStorage) Add(inputURL string) (string, error) {
+func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
 	genURL, err := app.CreateShortURL(inputURL)
 	if err != nil {
 		return "", err
 	}
 
 	baseShortURL := ""
-	err = d.DB.QueryRow("INSERT INTO url_list (short_url, url) VALUES ($1, $2)  ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url", genURL, inputURL).Scan(&baseShortURL)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	defer cancel()
+	err = d.DB.QueryRowContext(childCtx, "INSERT INTO url_list (short_url, url) VALUES ($1, $2)  ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url", genURL, inputURL).Scan(&baseShortURL)
 	if err != nil {
 		return "", err
 	} else if baseShortURL != genURL {
@@ -45,8 +49,10 @@ func (d DBStorage) Add(inputURL string) (string, error) {
 	return genURL, nil
 }
 
-func (d DBStorage) Find(key string) (string, error) {
-	row := d.DB.QueryRow("SELECT url FROM url_list WHERE short_url = $1", config.Cfg.BaseURL+key)
+func (d DBStorage) Find(ctx context.Context, key string) (string, error) {
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	defer cancel()
+	row := d.DB.QueryRowContext(childCtx, "SELECT url FROM url_list WHERE short_url = $1", config.Cfg.BaseURL+key)
 
 	var originalURL string
 	if err := row.Scan(&originalURL); err != nil {
@@ -67,7 +73,7 @@ func replaceSQL(stmt, pattern string, len int) string {
 	return strings.TrimSuffix(stmt, ",")
 }
 
-func (d DBStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
+func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
 	var output []BatchOutputParams
 	vals := []interface{}{}
 	for _, row := range inputURLs {
@@ -79,9 +85,11 @@ func (d DBStorage) BatchAdd(inputURLs []BatchInputParams) ([]BatchOutputParams, 
 		output = append(output, BatchOutputParams{CorrelationID: row.CorrelationID, ShortURL: genURL})
 	}
 
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
 	stmt, _ := d.DB.Prepare(replaceSQL("INSERT INTO url_list(short_url, url) VALUES %s", "(?, ?)", len(inputURLs)) +
 		" ON CONFLICT(short_url) DO UPDATE SET url = EXCLUDED.url, updated_at = NOW()")
-	_, err := stmt.Exec(vals...)
+	_, err := stmt.ExecContext(childCtx, vals...)
 	if err != nil {
 		return nil, err
 	}
