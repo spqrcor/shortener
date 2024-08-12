@@ -34,12 +34,13 @@ func CreateDBStorage() {
 }
 
 func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
-	genURL, err := app.CreateShortURL(inputURL)
+	err := app.ValidateURL(inputURL)
 	if err != nil {
 		return "", err
 	}
 
 	baseShortURL := ""
+	genURL := app.GenerateShortURL()
 	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 	err = d.DB.QueryRowContext(childCtx, "INSERT INTO url_list (short_url, url) VALUES ($1, $2)  ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url", genURL, inputURL).Scan(&baseShortURL)
@@ -79,10 +80,11 @@ func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) (
 	var output []BatchOutputParams
 	vals := []interface{}{}
 	for _, row := range inputURLs {
-		genURL, err := app.CreateShortURL(row.URL)
+		err := app.ValidateURL(row.URL)
 		if err != nil {
 			return nil, err
 		}
+		genURL := app.GenerateShortURL()
 		vals = append(vals, genURL, row.URL)
 		output = append(output, BatchOutputParams{CorrelationID: row.CorrelationID, ShortURL: genURL})
 	}

@@ -38,10 +38,11 @@ func CreateFileStorage() {
 }
 
 func (f FileStorage) Add(ctx context.Context, inputURL string) (string, error) {
-	genURL, err := app.CreateShortURL(inputURL)
+	err := app.ValidateURL(inputURL)
 	if err != nil {
 		return "", err
 	}
+	genURL := app.GenerateShortURL()
 	f.Store[genURL] = inputURL
 	updateFileStorage(f.Store)
 	return genURL, nil
@@ -71,10 +72,11 @@ func updateFileStorage(store map[string]string) {
 func (f FileStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
 	var output []BatchOutputParams
 	for _, inputURL := range inputURLs {
-		genURL, err := app.CreateShortURL(inputURL.URL)
+		err := app.ValidateURL(inputURL.URL)
 		if err != nil {
 			return nil, err
 		}
+		genURL := app.GenerateShortURL()
 		f.Store[genURL] = inputURL.URL
 		output = append(output, BatchOutputParams{CorrelationID: inputURL.CorrelationID, ShortURL: genURL})
 	}

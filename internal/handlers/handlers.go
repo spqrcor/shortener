@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -33,9 +32,7 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	var bodyBytes []byte
-	body := req.Body
-
-	bodyBytes, err := io.ReadAll(body)
+	bodyBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -46,7 +43,7 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	successStatus := http.StatusCreated
-	genURL, err := storage.Source.Add(context.Background(), string(bodyBytes))
+	genURL, err := storage.Source.Add(req.Context(), string(bodyBytes))
 	if err != nil {
 		if errors.Is(err, storage.ErrURLExists) {
 			successStatus = http.StatusConflict
@@ -66,7 +63,7 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func SearchShortHandler(res http.ResponseWriter, req *http.Request) {
-	redirectURL, err := storage.Source.Find(context.Background(), req.URL.Path)
+	redirectURL, err := storage.Source.Find(req.Context(), req.URL.Path)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -100,7 +97,7 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 
 	var output outputJSONData
 	successStatus := http.StatusCreated
-	output.Result, err = storage.Source.Add(context.Background(), input.URL)
+	output.Result, err = storage.Source.Add(req.Context(), input.URL)
 	if err != nil {
 		if errors.Is(err, storage.ErrURLExists) {
 			successStatus = http.StatusConflict
@@ -133,9 +130,8 @@ func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
 
 	var input []storage.BatchInputParams
 	var buf bytes.Buffer
-	body := req.Body
 
-	_, err := buf.ReadFrom(body)
+	_, err := buf.ReadFrom(req.Body)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -149,7 +145,7 @@ func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	output, err := storage.Source.BatchAdd(context.Background(), input)
+	output, err := storage.Source.BatchAdd(req.Context(), input)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return

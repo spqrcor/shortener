@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func generateShortURL() string {
+func GenerateShortURL() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -19,14 +19,14 @@ func generateShortURL() string {
 	return config.Cfg.BaseURL + "/" + string(buf)
 }
 
-func CreateShortURL(inputURL string) (string, error) {
+func ValidateURL(inputURL string) error {
 	if inputURL == "" {
-		return "", errors.New("входящее значение пустое")
+		return errors.New("входящее значение пустое")
 	}
 
 	_, err := url.ParseRequestURI(inputURL)
 	if err != nil {
-		return "", errors.New("неверный формат URL")
+		return errors.New("неверный формат URL")
 	}
-	return generateShortURL(), nil
+	return nil
 }

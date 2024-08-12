@@ -18,10 +18,11 @@ func CreateMemoryStorage() {
 }
 
 func (m MemoryStorage) Add(ctx context.Context, inputURL string) (string, error) {
-	genURL, err := app.CreateShortURL(inputURL)
+	err := app.ValidateURL(inputURL)
 	if err != nil {
 		return "", err
 	}
+	genURL := app.GenerateShortURL()
 	m.Store[genURL] = inputURL
 	return genURL, nil
 }
@@ -37,10 +38,11 @@ func (m MemoryStorage) Find(ctx context.Context, key string) (string, error) {
 func (m MemoryStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
 	var output []BatchOutputParams
 	for _, inputURL := range inputURLs {
-		genURL, err := app.CreateShortURL(inputURL.URL)
+		err := app.ValidateURL(inputURL.URL)
 		if err != nil {
 			return nil, err
 		}
+		genURL := app.GenerateShortURL()
 		m.Store[genURL] = inputURL.URL
 		output = append(output, BatchOutputParams{CorrelationID: inputURL.CorrelationID, ShortURL: genURL})
 	}
