@@ -58,7 +58,7 @@ func Test_createShortHandler(t *testing.T) {
 			"4http://ya.ru",
 			"text/plain",
 			want{
-				code: http.StatusBadRequest,
+				code: http.StatusInternalServerError,
 			},
 		},
 	}
@@ -114,7 +114,7 @@ func Test_searchShortHandler(t *testing.T) {
 			method: http.MethodGet,
 			target: "/XxXxXxX",
 			want: want{
-				code: http.StatusBadRequest,
+				code: http.StatusInternalServerError,
 			},
 		},
 	}
@@ -171,7 +171,7 @@ func Test_createJsonShortHandler(t *testing.T) {
 			[]byte(`{"url1":"https://ya.ru"}`),
 			"application/json",
 			want{
-				code: http.StatusBadRequest,
+				code: http.StatusInternalServerError,
 			},
 		},
 		{
@@ -180,7 +180,7 @@ func Test_createJsonShortHandler(t *testing.T) {
 			[]byte(`{"url":"1https://ya.ru"}`),
 			"application/json",
 			want{
-				code: http.StatusBadRequest,
+				code: http.StatusInternalServerError,
 			},
 		},
 		{

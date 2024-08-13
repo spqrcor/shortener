@@ -61,16 +61,16 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func SearchShortHandler(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	redirectURL, err := storage.Source.Find(req.Context(), req.URL.Path)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if req.Method == http.MethodGet {
-		http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
-	} else {
-		res.WriteHeader(http.StatusBadRequest)
-	}
+	http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
 }
 
 func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
