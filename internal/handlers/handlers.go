@@ -3,8 +3,11 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
+	"shortener/internal/config"
+	"shortener/internal/db"
 	"shortener/internal/storage"
 	"strings"
 )
@@ -29,27 +32,27 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	var bodyBytes []byte
-	body := req.Body
-
-	bodyBytes, err := io.ReadAll(body)
+	bodyBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = req.Body.Close()
-	if err != nil {
+	if err = req.Body.Close(); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	genURL, err := storage.Add(string(bodyBytes))
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+	successStatus := http.StatusCreated
+	genURL, err := storage.Source.Add(req.Context(), string(bodyBytes))
+	if errors.Is(err, storage.ErrURLExists) {
+		successStatus = http.StatusConflict
+	} else if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	res.Header().Set("Content-Type", "text/plain")
-	res.WriteHeader(http.StatusCreated)
+	res.WriteHeader(successStatus)
 	_, err = res.Write([]byte(genURL))
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
@@ -58,16 +61,16 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func SearchShortHandler(res http.ResponseWriter, req *http.Request) {
-	redirectURL, err := storage.Find(req.URL.Path)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+	if req.Method != http.MethodGet {
+		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if req.Method == http.MethodGet {
-		http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
-	} else {
-		res.WriteHeader(http.StatusBadRequest)
+	redirectURL, err := storage.Source.Find(req.Context(), req.URL.Path)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
 }
 
 func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
@@ -91,12 +94,58 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	var output outputJSONData
-	output.Result, err = storage.Add(input.URL)
+	successStatus := http.StatusCreated
+	output.Result, err = storage.Source.Add(req.Context(), input.URL)
+	if errors.Is(err, storage.ErrURLExists) {
+		successStatus = http.StatusConflict
+	} else if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.Marshal(output)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	res.WriteHeader(successStatus)
+	_, err = res.Write(resp)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
+	if !isValidInputParams(req, inputParams{Method: http.MethodPost, ContentType: "application/json"}) {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var input []storage.BatchInputParams
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(req.Body)
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err = json.Unmarshal(buf.Bytes(), &input); err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if len(input) == 0 {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	output, err := storage.Source.BatchAdd(req.Context(), input)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	resp, err := json.Marshal(output)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
@@ -110,6 +159,20 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
+}
+
+func PingHandler(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet || config.Cfg.DatabaseDSN == "" {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err := db.Connect()
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res.WriteHeader(http.StatusOK)
 }
 
 func isValidInputParams(req *http.Request, params inputParams) bool {
