@@ -44,13 +44,11 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 
 	successStatus := http.StatusCreated
 	genURL, err := storage.Source.Add(req.Context(), string(bodyBytes))
-	if err != nil {
-		if errors.Is(err, storage.ErrURLExists) {
-			successStatus = http.StatusConflict
-		} else {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
+	if errors.Is(err, storage.ErrURLExists) {
+		successStatus = http.StatusConflict
+	} else if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	res.Header().Set("Content-Type", "text/plain")
@@ -65,7 +63,7 @@ func CreateShortHandler(res http.ResponseWriter, req *http.Request) {
 func SearchShortHandler(res http.ResponseWriter, req *http.Request) {
 	redirectURL, err := storage.Source.Find(req.Context(), req.URL.Path)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if req.Method == http.MethodGet {
@@ -98,13 +96,11 @@ func CreateJSONShortHandler(res http.ResponseWriter, req *http.Request) {
 	var output outputJSONData
 	successStatus := http.StatusCreated
 	output.Result, err = storage.Source.Add(req.Context(), input.URL)
-	if err != nil {
-		if errors.Is(err, storage.ErrURLExists) {
-			successStatus = http.StatusConflict
-		} else {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
+	if errors.Is(err, storage.ErrURLExists) {
+		successStatus = http.StatusConflict
+	} else if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	resp, err := json.Marshal(output)
@@ -147,7 +143,7 @@ func CreateJSONBatchHandler(res http.ResponseWriter, req *http.Request) {
 
 	output, err := storage.Source.BatchAdd(req.Context(), input)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	resp, err := json.Marshal(output)
