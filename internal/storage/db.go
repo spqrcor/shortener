@@ -131,14 +131,14 @@ func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, er
 	if err != nil {
 		return nil, err
 	}
-	defer func(rows *sql.Rows) {
+	defer func() {
 		if err := rows.Close(); err != nil {
 			logger.Log.Error(err.Error())
 		}
 		if err := rows.Err(); err != nil {
 			logger.Log.Error(err.Error())
 		}
-	}(rows)
+	}()
 
 	for rows.Next() {
 		var s FindByUserOutputParams
