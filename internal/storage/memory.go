@@ -48,3 +48,8 @@ func (m MemoryStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParam
 	}
 	return output, nil
 }
+
+func (m MemoryStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, error) {
+	var output []FindByUserOutputParams
+	return output, nil
+}

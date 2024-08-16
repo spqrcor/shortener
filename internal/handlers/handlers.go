@@ -175,6 +175,40 @@ func PingHandler(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
+func SearchByUserHandler(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet || config.Cfg.DatabaseDSN == "" {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	output, err := storage.Source.FindByUser(req.Context())
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, storage.ErrUserNotExists) {
+			status = http.StatusUnauthorized
+		}
+		http.Error(res, err.Error(), status)
+		return
+	}
+	resp, err := json.Marshal(output)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if len(output) > 0 {
+		res.WriteHeader(http.StatusOK)
+	} else {
+		res.WriteHeader(http.StatusNoContent)
+	}
+	_, err = res.Write(resp)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
 func isValidInputParams(req *http.Request, params inputParams) bool {
 	if req.Method != params.Method {
 		return false

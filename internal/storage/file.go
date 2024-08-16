@@ -83,3 +83,8 @@ func (f FileStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams)
 	updateFileStorage(f.Store)
 	return output, nil
 }
+
+func (f FileStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, error) {
+	var output []FindByUserOutputParams
+	return output, nil
+}
