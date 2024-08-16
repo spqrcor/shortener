@@ -18,26 +18,26 @@ type ContextKey string
 
 var ContextUserID ContextKey = "UserID"
 
-const TOKEN_EXP = time.Hour * 3
-const SECRET_KEY = "KLJ-fo3Fksd3fl!="
+const tokenExp = time.Hour * 3
+const secretKey = "KLJ-fo3Fksd3fl!="
 
 func CreateCookie(UserID uuid.UUID) (http.Cookie, error) {
 	token, err := createToken(UserID)
 	if err != nil {
 		return http.Cookie{}, err
 	}
-	return http.Cookie{Name: "Authorization", Value: token, Expires: time.Now().Add(TOKEN_EXP), HttpOnly: true, Path: "/"}, nil
+	return http.Cookie{Name: "Authorization", Value: token, Expires: time.Now().Add(tokenExp), HttpOnly: true, Path: "/"}, nil
 }
 
 func createToken(UserID uuid.UUID) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
 		UserID: UserID,
 	})
 
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", err
 	}
@@ -48,7 +48,7 @@ func GetUserIDFromCookie(tokenString string) (uuid.UUID, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(strings.TrimPrefix(tokenString, "Bearer "), claims,
 		func(t *jwt.Token) (interface{}, error) {
-			return []byte(SECRET_KEY), nil
+			return []byte(secretKey), nil
 		})
 	if err != nil {
 		return uuid.Nil, err

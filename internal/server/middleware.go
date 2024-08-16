@@ -51,11 +51,16 @@ func authenticateMiddleware(next http.Handler) http.Handler {
 		UserID := uuid.New()
 		cookie, err := r.Cookie("Authorization")
 		if err != nil {
-			authenticate.SetCookie(rw, UserID)
+			if r.RequestURI == "/api/user/urls" {
+				http.Error(rw, err.Error(), http.StatusUnauthorized)
+				return
+			} else {
+				authenticate.SetCookie(rw, UserID)
+			}
 		} else {
 			decodeUserID, err := authenticate.GetUserIDFromCookie(cookie.Value)
 			if err != nil {
-				http.Error(rw, err.Error(), http.StatusUnauthorized)
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
 				return
 			} else {
 				UserID = decodeUserID

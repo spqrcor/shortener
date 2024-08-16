@@ -183,11 +183,7 @@ func SearchByUserHandler(res http.ResponseWriter, req *http.Request) {
 
 	output, err := storage.Source.FindByUser(req.Context())
 	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, storage.ErrUserNotExists) {
-			status = http.StatusUnauthorized
-		}
-		http.Error(res, err.Error(), status)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	resp, err := json.Marshal(output)
