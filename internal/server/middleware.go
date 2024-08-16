@@ -60,6 +60,7 @@ func authenticateMiddleware(next http.Handler) http.Handler {
 		} else {
 			decodeUserID, err := authenticate.GetUserIDFromCookie(cookie.Value)
 			if err != nil {
+				logger.Log.Error(err.Error())
 				http.Error(rw, err.Error(), http.StatusInternalServerError)
 				return
 			} else {
