@@ -22,6 +22,7 @@ func Start() {
 	r.Get("/{id}", handlers.SearchShortHandler)
 	r.Get("/ping", handlers.PingHandler)
 	r.Get("/api/user/urls", handlers.SearchByUserHandler)
+	r.Delete("/api/user/urls", handlers.RemoveShortHandler)
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 	})

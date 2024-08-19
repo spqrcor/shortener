@@ -51,7 +51,7 @@ func authenticateMiddleware(next http.Handler) http.Handler {
 		UserID := uuid.New()
 		cookie, err := r.Cookie("Authorization")
 		if err != nil {
-			if r.RequestURI == "/api/user/urls" {
+			if r.RequestURI == "/api/user/urls" && r.Method == http.MethodGet {
 				http.Error(rw, err.Error(), http.StatusUnauthorized)
 				return
 			} else {

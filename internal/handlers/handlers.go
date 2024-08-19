@@ -66,7 +66,10 @@ func SearchShortHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	redirectURL, err := storage.Source.Find(req.Context(), req.URL.Path)
-	if err != nil {
+	if errors.Is(err, storage.ErrShortIsRemoved) {
+		http.Error(res, err.Error(), http.StatusGone)
+		return
+	} else if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -203,6 +206,36 @@ func SearchByUserHandler(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
+}
+
+func RemoveShortHandler(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodDelete || config.Cfg.DatabaseDSN == "" {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var input []string
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(req.Body)
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err = json.Unmarshal(buf.Bytes(), &input); err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if len(input) == 0 {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := storage.Source.Remove(req.Context(), input); err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	res.WriteHeader(http.StatusAccepted)
 }
 
 func isValidInputParams(req *http.Request, params inputParams) bool {

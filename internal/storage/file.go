@@ -88,3 +88,7 @@ func (f FileStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, 
 	var output []FindByUserOutputParams
 	return output, nil
 }
+
+func (f FileStorage) Remove(ctx context.Context, shorts []string) error {
+	return nil
+}

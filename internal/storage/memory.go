@@ -53,3 +53,7 @@ func (m MemoryStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams
 	var output []FindByUserOutputParams
 	return output, nil
 }
+
+func (m MemoryStorage) Remove(ctx context.Context, shorts []string) error {
+	return nil
+}

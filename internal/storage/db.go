@@ -22,6 +22,7 @@ type DBStorage struct {
 
 var ErrURLExists = fmt.Errorf("url exists")
 var ErrUserNotExists = fmt.Errorf("user not exists")
+var ErrShortIsRemoved = fmt.Errorf("short is removed")
 
 func CreateDBStorage() {
 	res, err := db.Connect()
@@ -59,11 +60,15 @@ func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
 func (d DBStorage) Find(ctx context.Context, key string) (string, error) {
 	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
-	row := d.DB.QueryRowContext(childCtx, "SELECT url FROM url_list WHERE short_url = $1", config.Cfg.BaseURL+key)
+	row := d.DB.QueryRowContext(childCtx, "SELECT url, deleted_at FROM url_list WHERE short_url = $1", config.Cfg.BaseURL+key)
 
 	var originalURL string
-	if err := row.Scan(&originalURL); err != nil {
+	var deletedAt sql.NullTime
+	if err := row.Scan(&originalURL, &deletedAt); err != nil {
 		return "", errors.New("ключ не найден")
+	}
+	if deletedAt.Valid {
+		return originalURL, ErrShortIsRemoved
 	}
 	return originalURL, nil
 }
@@ -109,7 +114,7 @@ func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) (
 
 	childCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
-	stmt, _ := d.DB.Prepare(replaceSQL("INSERT INTO url_list(short_url, url, user_id) VALUES %s", "(?, ?, ?)", len(inputURLs)) +
+	stmt, _ := d.DB.PrepareContext(childCtx, replaceSQL("INSERT INTO url_list(short_url, url, user_id) VALUES %s", "(?, ?, ?)", len(inputURLs))+
 		" ON CONFLICT(short_url) DO UPDATE SET url = EXCLUDED.url, updated_at = NOW()")
 	_, err := stmt.ExecContext(childCtx, vals...)
 	if err != nil {
@@ -148,4 +153,26 @@ func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, er
 		output = append(output, s)
 	}
 	return output, nil
+}
+
+func getFormatShorts(shorts []string) []string {
+	for i, short := range shorts {
+		shorts[i] = config.Cfg.BaseURL + "/" + short
+	}
+	return shorts
+}
+
+func (d DBStorage) Remove(ctx context.Context, shorts []string) error {
+	UserID, ok := ctx.Value(authenticate.ContextUserID).(uuid.UUID)
+	if !ok {
+		return ErrUserNotExists
+	}
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	defer cancel()
+
+	_, err := d.DB.QueryContext(childCtx, "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)", UserID, getFormatShorts(shorts))
+	if err != nil {
+		return err
+	}
+	return nil
 }

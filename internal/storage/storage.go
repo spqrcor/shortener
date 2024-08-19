@@ -10,6 +10,7 @@ type Storage interface {
 	Find(ctx context.Context, key string) (string, error)
 	BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error)
 	FindByUser(ctx context.Context) ([]FindByUserOutputParams, error)
+	Remove(ctx context.Context, shorts []string) error
 }
 
 type BatchInputParams struct {
