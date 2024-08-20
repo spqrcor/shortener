@@ -170,17 +170,9 @@ func (d DBStorage) Remove(ctx context.Context, shorts []string) error {
 	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	rows, err := d.DB.QueryContext(childCtx, "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)", UserID, getFormatShorts(shorts))
+	_, err := d.DB.ExecContext(childCtx, "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)", UserID, getFormatShorts(shorts))
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			logger.Log.Error(err.Error())
-		}
-		if err := rows.Err(); err != nil {
-			logger.Log.Error(err.Error())
-		}
-	}()
 	return nil
 }
