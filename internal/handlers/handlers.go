@@ -179,7 +179,7 @@ func PingHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func SearchByUserHandler(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet || config.Cfg.DatabaseDSN == "" {
+	if req.Method != http.MethodGet {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -209,7 +209,7 @@ func SearchByUserHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func RemoveShortHandler(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodDelete || config.Cfg.DatabaseDSN == "" {
+	if req.Method != http.MethodDelete {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
