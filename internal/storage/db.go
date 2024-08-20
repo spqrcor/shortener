@@ -115,7 +115,7 @@ func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) (
 	childCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 	stmt, _ := d.DB.PrepareContext(childCtx, replaceSQL("INSERT INTO url_list(short_url, url, user_id) VALUES %s", "(?, ?, ?)", len(inputURLs))+
-		" ON CONFLICT(short_url) DO UPDATE SET url = EXCLUDED.url, updated_at = NOW()")
+		" ON CONFLICT(short_url) DO UPDATE SET url = EXCLUDED.url, updated_at = NOW(), deleted_at = NULL")
 	_, err := stmt.ExecContext(childCtx, vals...)
 	if err != nil {
 		return nil, err
@@ -132,7 +132,7 @@ func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, er
 
 	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
-	rows, err := d.DB.QueryContext(childCtx, "SELECT short_url, url FROM url_list WHERE user_id = $1", UserID)
+	rows, err := d.DB.QueryContext(childCtx, "SELECT short_url, url FROM url_list WHERE user_id = $1 AND deleted_at IS NULL", UserID)
 	if err != nil {
 		return nil, err
 	}
