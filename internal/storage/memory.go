@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"github.com/google/uuid"
 	"shortener/internal/app"
 	"shortener/internal/config"
 )
@@ -54,6 +55,6 @@ func (m MemoryStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams
 	return output, nil
 }
 
-func (m MemoryStorage) Remove(ctx context.Context, shorts []string) error {
+func (m MemoryStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
 	return nil
 }

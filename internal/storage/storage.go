@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"shortener/internal/config"
 )
 
@@ -10,7 +11,7 @@ type Storage interface {
 	Find(ctx context.Context, key string) (string, error)
 	BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error)
 	FindByUser(ctx context.Context) ([]FindByUserOutputParams, error)
-	Remove(ctx context.Context, shorts []string) error
+	Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error
 }
 
 type BatchInputParams struct {

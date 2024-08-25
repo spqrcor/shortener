@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
+	"shortener/internal/authenticate"
 	"shortener/internal/config"
 	"shortener/internal/db"
+	"shortener/internal/services"
 	"shortener/internal/storage"
 	"strings"
 )
@@ -231,10 +234,13 @@ func RemoveShortHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := storage.Source.Remove(req.Context(), input); err != nil {
+	UserID, ok := req.Context().Value(authenticate.ContextUserID).(uuid.UUID)
+	if !ok {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	services.DeleteShortURL(UserID, input)
 	res.WriteHeader(http.StatusAccepted)
 }
 

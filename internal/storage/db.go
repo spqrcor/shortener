@@ -162,11 +162,7 @@ func getFormatShorts(shorts []string) []string {
 	return shorts
 }
 
-func (d DBStorage) Remove(ctx context.Context, shorts []string) error {
-	UserID, ok := ctx.Value(authenticate.ContextUserID).(uuid.UUID)
-	if !ok {
-		return ErrUserNotExists
-	}
+func (d DBStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
 	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
