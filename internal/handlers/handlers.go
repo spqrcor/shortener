@@ -236,7 +236,7 @@ func RemoveShortHandler(res http.ResponseWriter, req *http.Request) {
 
 	UserID, ok := req.Context().Value(authenticate.ContextUserID).(uuid.UUID)
 	if ok {
-		services.DeleteShortURL(UserID, input)
+		go services.DeleteShortURL(UserID, input)
 	}
 
 	res.WriteHeader(http.StatusAccepted)
