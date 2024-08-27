@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"shortener/internal/config"
 )
 
@@ -9,6 +10,8 @@ type Storage interface {
 	Add(ctx context.Context, inputURL string) (string, error)
 	Find(ctx context.Context, key string) (string, error)
 	BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error)
+	FindByUser(ctx context.Context) ([]FindByUserOutputParams, error)
+	Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error
 }
 
 type BatchInputParams struct {
@@ -19,6 +22,11 @@ type BatchInputParams struct {
 type BatchOutputParams struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
+}
+
+type FindByUserOutputParams struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 var Source Storage

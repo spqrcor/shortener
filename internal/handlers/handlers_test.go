@@ -376,3 +376,89 @@ func TestCreateJSONBatchHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestRemoveShortHandler(t *testing.T) {
+	type want struct {
+		code int
+	}
+	tests := []struct {
+		name   string
+		method string
+		body   []byte
+		want   want
+	}{
+		{
+			"NOT DELETE",
+			http.MethodGet,
+			[]byte(``),
+			want{
+				code: http.StatusInternalServerError,
+			},
+		},
+		{
+			"DELETE error",
+			http.MethodDelete,
+			[]byte(`{"url":"https://ya.ru"}`),
+			want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			"DELETE current",
+			http.MethodDelete,
+			[]byte(`["dstDdse"]`),
+			want{
+				code: http.StatusAccepted,
+			},
+		},
+	}
+	storage.CreateMemoryStorage()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(tt.method, "/api/user/urls", bytes.NewReader(tt.body))
+			w := httptest.NewRecorder()
+			RemoveShortHandler(w, request)
+			result := w.Result()
+			assert.Equal(t, tt.want.code, result.StatusCode)
+			_ = result.Body.Close()
+		})
+	}
+}
+
+func TestSearchByUserHandler(t *testing.T) {
+	type want struct {
+		code int
+	}
+	tests := []struct {
+		name   string
+		method string
+		want   want
+	}{
+		{
+			"NOT GET",
+			http.MethodPost,
+			want{
+				code: http.StatusInternalServerError,
+			},
+		},
+		{
+			"CURRENT GET",
+			http.MethodGet,
+			want{
+				code: http.StatusNoContent,
+			},
+		},
+	}
+	storage.CreateMemoryStorage()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(tt.method, "/api/user/urls", nil)
+			w := httptest.NewRecorder()
+			SearchByUserHandler(w, request)
+			result := w.Result()
+
+			_ = result.Body.Close()
+			assert.Equal(t, tt.want.code, result.StatusCode)
+		})
+	}
+}

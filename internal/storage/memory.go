@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"github.com/google/uuid"
 	"shortener/internal/app"
 	"shortener/internal/config"
 )
@@ -47,4 +48,13 @@ func (m MemoryStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParam
 		output = append(output, BatchOutputParams{CorrelationID: inputURL.CorrelationID, ShortURL: genURL})
 	}
 	return output, nil
+}
+
+func (m MemoryStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, error) {
+	var output []FindByUserOutputParams
+	return output, nil
+}
+
+func (m MemoryStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
+	return nil
 }

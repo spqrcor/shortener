@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
+	"shortener/internal/authenticate"
 	"shortener/internal/config"
 	"shortener/internal/db"
+	"shortener/internal/services"
 	"shortener/internal/storage"
 	"strings"
 )
@@ -66,7 +69,10 @@ func SearchShortHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	redirectURL, err := storage.Source.Find(req.Context(), req.URL.Path)
-	if err != nil {
+	if errors.Is(err, storage.ErrShortIsRemoved) {
+		http.Error(res, err.Error(), http.StatusGone)
+		return
+	} else if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -173,6 +179,67 @@ func PingHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	res.WriteHeader(http.StatusOK)
+}
+
+func SearchByUserHandler(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	output, err := storage.Source.FindByUser(req.Context())
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	resp, err := json.Marshal(output)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if len(output) > 0 {
+		res.WriteHeader(http.StatusOK)
+	} else {
+		res.WriteHeader(http.StatusNoContent)
+	}
+	_, err = res.Write(resp)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func RemoveShortHandler(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodDelete {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var input []string
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(req.Body)
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err = json.Unmarshal(buf.Bytes(), &input); err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if len(input) == 0 {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	UserID, ok := req.Context().Value(authenticate.ContextUserID).(uuid.UUID)
+	if ok {
+		go services.DeleteShortURL(UserID, input)
+	}
+
+	res.WriteHeader(http.StatusAccepted)
 }
 
 func isValidInputParams(req *http.Request, params inputParams) bool {

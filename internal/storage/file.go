@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/google/uuid"
 	"os"
 	"shortener/internal/app"
 	"shortener/internal/config"
@@ -82,4 +83,13 @@ func (f FileStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams)
 	}
 	updateFileStorage(f.Store)
 	return output, nil
+}
+
+func (f FileStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, error) {
+	var output []FindByUserOutputParams
+	return output, nil
+}
+
+func (f FileStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
+	return nil
 }

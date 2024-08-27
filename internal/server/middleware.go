@@ -2,9 +2,12 @@ package server
 
 import (
 	"compress/gzip"
+	"context"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"net/http"
+	"shortener/internal/authenticate"
 	"shortener/internal/logger"
 	"time"
 )
@@ -40,5 +43,31 @@ func loggerMiddleware(next http.Handler) http.Handler {
 			zap.Int("content-length", ww.BytesWritten()),
 			zap.String("duration", duration.String()),
 		)
+	})
+}
+
+func authenticateMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		UserID := uuid.New()
+		cookie, err := r.Cookie("Authorization")
+		if err != nil {
+			if r.RequestURI == "/api/user/urls" && r.Method == http.MethodGet {
+				http.Error(rw, err.Error(), http.StatusUnauthorized)
+				return
+			} else {
+				authenticate.SetCookie(rw, UserID)
+			}
+		} else {
+			decodeUserID, err := authenticate.GetUserIDFromCookie(cookie.Value)
+			if err != nil {
+				logger.Log.Error(err.Error())
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			} else {
+				UserID = decodeUserID
+			}
+		}
+		ctx := context.WithValue(r.Context(), authenticate.ContextUserID, UserID)
+		next.ServeHTTP(rw, r.WithContext(ctx))
 	})
 }
