@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func GenerateShortURL(stringLength int, baseUrl string) string {
+func GenerateShortURL(stringLength int, baseURL string) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -15,7 +15,7 @@ func GenerateShortURL(stringLength int, baseUrl string) string {
 	for i := range buf {
 		buf[i] = charset[random.Intn(len(charset))]
 	}
-	return baseUrl + "/" + string(buf)
+	return baseURL + "/" + string(buf)
 }
 
 func ValidateURL(inputURL string) error {
