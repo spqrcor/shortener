@@ -3,14 +3,30 @@ package services
 import (
 	"context"
 	"github.com/google/uuid"
-	"shortener/internal/logger"
+	"go.uber.org/zap"
 	"shortener/internal/storage"
 	"sync"
 )
 
 const batchSize = 25
 
-func DeleteShortURL(UserID uuid.UUID, shorts []string) {
+type BatchRemover interface {
+	DeleteShortURL(UserID uuid.UUID, shorts []string)
+}
+
+type BatchRemove struct {
+	logger  *zap.Logger
+	storage storage.Storage
+}
+
+func NewBatchRemoveService(logger *zap.Logger, storage storage.Storage) *BatchRemove {
+	return &BatchRemove{
+		logger:  logger,
+		storage: storage,
+	}
+}
+
+func (b *BatchRemove) DeleteShortURL(UserID uuid.UUID, shorts []string) {
 	urlChan := make(chan string, len(shorts))
 	var wg sync.WaitGroup
 
@@ -30,9 +46,9 @@ func DeleteShortURL(UserID uuid.UUID, shorts []string) {
 				wg.Add(1)
 				go func(urls []string) {
 					defer wg.Done()
-					err := storage.Source.Remove(context.Background(), UserID, urls)
+					err := b.storage.Remove(context.Background(), UserID, urls)
 					if err != nil {
-						logger.Log.Error("Remove error " + err.Error())
+						b.logger.Error("Remove error " + err.Error())
 					}
 				}(buffer)
 				buffer = nil
@@ -42,9 +58,9 @@ func DeleteShortURL(UserID uuid.UUID, shorts []string) {
 			wg.Add(1)
 			go func(urls []string) {
 				defer wg.Done()
-				err := storage.Source.Remove(context.Background(), UserID, urls)
+				err := b.storage.Remove(context.Background(), UserID, urls)
 				if err != nil {
-					logger.Log.Error("Remove error " + err.Error())
+					b.logger.Error("Remove error " + err.Error())
 				}
 			}(buffer)
 		}

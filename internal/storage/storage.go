@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"shortener/internal/config"
 )
 
@@ -29,14 +30,12 @@ type FindByUserOutputParams struct {
 	OriginalURL string `json:"original_url"`
 }
 
-var Source Storage
-
-func Init() {
-	if config.Cfg.DatabaseDSN != "" {
-		CreateDBStorage()
-	} else if config.Cfg.FileStoragePath != "" {
-		CreateFileStorage()
+func NewStorage(config config.Config, logger *zap.Logger) Storage {
+	if config.DatabaseDSN != "" {
+		return CreateDBStorage(config, logger)
+	} else if config.FileStoragePath != "" {
+		return CreateFileStorage(config, logger)
 	} else {
-		CreateMemoryStorage()
+		return CreateMemoryStorage(config)
 	}
 }
