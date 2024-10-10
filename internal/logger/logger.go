@@ -2,18 +2,15 @@ package logger
 
 import (
 	"go.uber.org/zap"
-	"log"
-	"shortener/internal/config"
+	"go.uber.org/zap/zapcore"
 )
 
-var Log *zap.Logger = zap.NewNop()
-
-func Init() {
+func NewLogger(logLevel zapcore.Level) (*zap.Logger, error) {
 	cfg := zap.NewProductionConfig()
-	cfg.Level = zap.NewAtomicLevelAt(config.Cfg.LogLevel)
+	cfg.Level = zap.NewAtomicLevelAt(logLevel)
 	zl, err := cfg.Build()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	Log = zl
+	return zl, nil
 }

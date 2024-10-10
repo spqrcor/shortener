@@ -3,15 +3,15 @@ package db
 import (
 	"database/sql"
 	"github.com/pressly/goose/v3"
-	"shortener/internal/logger"
 )
 
-func Migrate(db *sql.DB) {
+func Migrate(db *sql.DB) error {
 	if err := goose.SetDialect("postgres"); err != nil {
-		logger.Log.Fatal(err.Error())
+		return err
 	}
 
 	if err := goose.Up(db, "internal/migrations"); err != nil {
-		logger.Log.Fatal(err.Error())
+		return err
 	}
+	return nil
 }

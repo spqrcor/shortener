@@ -6,49 +6,59 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"shortener/internal/app"
 	"shortener/internal/authenticate"
 	"shortener/internal/config"
 	"shortener/internal/db"
-	"shortener/internal/logger"
 	"strconv"
 	"strings"
 	"time"
 )
 
+const (
+	addQuery         = "INSERT INTO url_list (short_url, url, user_id) VALUES ($1, $2, $3) ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url"
+	findByShortQuery = "SELECT url, deleted_at FROM url_list WHERE short_url = $1"
+	findByUserQuery  = "SELECT short_url, url FROM url_list WHERE user_id = $1 AND deleted_at IS NULL"
+	removeQuery      = "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)"
+)
+
 type DBStorage struct {
-	DB *sql.DB
+	config config.Config
+	logger *zap.Logger
+	DB     *sql.DB
 }
 
 var ErrURLExists = fmt.Errorf("url exists")
 var ErrUserNotExists = fmt.Errorf("user not exists")
 var ErrShortIsRemoved = fmt.Errorf("short is removed")
 
-func CreateDBStorage() {
-	res, err := db.Connect()
+func CreateDBStorage(config config.Config, logger *zap.Logger) Storage {
+	res, err := db.Connect(config.DatabaseDSN)
 	if err != nil {
-		logger.Log.Fatal(err.Error())
+		logger.Fatal(err.Error())
+	}
+	if err := db.Migrate(res); err != nil {
+		logger.Fatal(err.Error())
 	}
 
-	db.Migrate(res)
-
-	Source = DBStorage{
-		DB: res,
+	return DBStorage{
+		config: config,
+		logger: logger,
+		DB:     res,
 	}
 }
 
 func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
-	err := app.ValidateURL(inputURL)
-	if err != nil {
+	if err := app.ValidateURL(inputURL); err != nil {
 		return "", err
 	}
 
 	baseShortURL := ""
-	genURL := app.GenerateShortURL()
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	genURL := app.GenerateShortURL(d.config.ShortStringLength, d.config.BaseURL)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
-	err = d.DB.QueryRowContext(childCtx, "INSERT INTO url_list (short_url, url, user_id) VALUES ($1, $2, $3)  "+
-		"ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url", genURL, inputURL, ctx.Value(authenticate.ContextUserID)).Scan(&baseShortURL)
+	err := d.DB.QueryRowContext(childCtx, addQuery, genURL, inputURL, ctx.Value(authenticate.ContextUserID)).Scan(&baseShortURL)
 	if err != nil {
 		return "", err
 	} else if baseShortURL != genURL {
@@ -58,9 +68,9 @@ func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
 }
 
 func (d DBStorage) Find(ctx context.Context, key string) (string, error) {
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
-	row := d.DB.QueryRowContext(childCtx, "SELECT url, deleted_at FROM url_list WHERE short_url = $1", config.Cfg.BaseURL+key)
+	row := d.DB.QueryRowContext(childCtx, findByShortQuery, d.config.BaseURL+key)
 
 	var originalURL string
 	var deletedAt sql.NullTime
@@ -107,12 +117,12 @@ func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) (
 			return nil, err
 		}
 
-		genURL := app.GenerateShortURL()
+		genURL := app.GenerateShortURL(d.config.ShortStringLength, d.config.BaseURL)
 		vals = append(vals, genURL, row.URL, UserID)
 		output = append(output, BatchOutputParams{CorrelationID: row.CorrelationID, ShortURL: genURL})
 	}
 
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
 	stmt, _ := d.DB.PrepareContext(childCtx, replaceSQL("INSERT INTO url_list(short_url, url, user_id) VALUES %s", "(?, ?, ?)", len(inputURLs))+
 		" ON CONFLICT(short_url) DO UPDATE SET url = EXCLUDED.url, updated_at = NOW(), deleted_at = NULL")
@@ -130,18 +140,18 @@ func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, er
 		return output, ErrUserNotExists
 	}
 
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
-	rows, err := d.DB.QueryContext(childCtx, "SELECT short_url, url FROM url_list WHERE user_id = $1 AND deleted_at IS NULL", UserID)
+	rows, err := d.DB.QueryContext(childCtx, findByUserQuery, UserID)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
-			logger.Log.Error(err.Error())
+			d.logger.Error(err.Error())
 		}
 		if err := rows.Err(); err != nil {
-			logger.Log.Error(err.Error())
+			d.logger.Error(err.Error())
 		}
 	}()
 
@@ -155,18 +165,18 @@ func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, er
 	return output, nil
 }
 
-func getFormatShorts(shorts []string) []string {
+func (d DBStorage) getFormatShorts(shorts []string) []string {
 	for i, short := range shorts {
-		shorts[i] = config.Cfg.BaseURL + "/" + short
+		shorts[i] = d.config.BaseURL + "/" + short
 	}
 	return shorts
 }
 
 func (d DBStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
 
-	_, err := d.DB.ExecContext(childCtx, "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)", UserID, getFormatShorts(shorts))
+	_, err := d.DB.ExecContext(childCtx, removeQuery, UserID, d.getFormatShorts(shorts))
 	if err != nil {
 		return err
 	}

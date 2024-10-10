@@ -9,12 +9,14 @@ import (
 )
 
 type MemoryStorage struct {
-	Store map[string]string
+	config config.Config
+	Store  map[string]string
 }
 
-func CreateMemoryStorage() {
-	Source = MemoryStorage{
-		Store: map[string]string{},
+func CreateMemoryStorage(config config.Config) Storage {
+	return MemoryStorage{
+		config: config,
+		Store:  map[string]string{},
 	}
 }
 
@@ -23,13 +25,13 @@ func (m MemoryStorage) Add(ctx context.Context, inputURL string) (string, error)
 	if err != nil {
 		return "", err
 	}
-	genURL := app.GenerateShortURL()
+	genURL := app.GenerateShortURL(m.config.ShortStringLength, m.config.BaseURL)
 	m.Store[genURL] = inputURL
 	return genURL, nil
 }
 
 func (m MemoryStorage) Find(ctx context.Context, key string) (string, error) {
-	redirectURL, ok := m.Store[config.Cfg.BaseURL+key]
+	redirectURL, ok := m.Store[m.config.BaseURL+key]
 	if ok {
 		return redirectURL, nil
 	}
@@ -43,7 +45,7 @@ func (m MemoryStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParam
 		if err != nil {
 			return nil, err
 		}
-		genURL := app.GenerateShortURL()
+		genURL := app.GenerateShortURL(m.config.ShortStringLength, m.config.BaseURL)
 		m.Store[genURL] = inputURL.URL
 		output = append(output, BatchOutputParams{CorrelationID: inputURL.CorrelationID, ShortURL: genURL})
 	}

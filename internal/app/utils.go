@@ -4,19 +4,18 @@ import (
 	"errors"
 	"math/rand"
 	"net/url"
-	"shortener/internal/config"
 	"time"
 )
 
-func GenerateShortURL() string {
+func GenerateShortURL(stringLength int, baseUrl string) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	buf := make([]byte, config.Cfg.ShortStringLength)
+	buf := make([]byte, stringLength)
 	for i := range buf {
 		buf[i] = charset[random.Intn(len(charset))]
 	}
-	return config.Cfg.BaseURL + "/" + string(buf)
+	return baseUrl + "/" + string(buf)
 }
 
 func ValidateURL(inputURL string) error {
