@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -32,6 +31,7 @@ type DBStorage struct {
 var ErrURLExists = fmt.Errorf("url exists")
 var ErrUserNotExists = fmt.Errorf("user not exists")
 var ErrShortIsRemoved = fmt.Errorf("short is removed")
+var ErrKeyNotFound = fmt.Errorf("key not found")
 
 func CreateDBStorage(config config.Config, logger *zap.Logger) Storage {
 	res, err := db.Connect(config.DatabaseDSN)
@@ -75,7 +75,7 @@ func (d DBStorage) Find(ctx context.Context, key string) (string, error) {
 	var originalURL string
 	var deletedAt sql.NullTime
 	if err := row.Scan(&originalURL, &deletedAt); err != nil {
-		return "", errors.New("ключ не найден")
+		return "", ErrKeyNotFound
 	}
 	if deletedAt.Valid {
 		return originalURL, ErrShortIsRemoved

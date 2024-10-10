@@ -13,11 +13,12 @@ import (
 	"testing"
 )
 
-func TestCreateShortHandler(t *testing.T) {
+func TestCreateJSONShortHandler(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	m := mocks.NewMockStorage(mockCtrl)
+
 	m.EXPECT().Add(context.Background(), "https://ya.ru").Return("-", nil).MaxTimes(1)
 	m.EXPECT().Add(context.Background(), "https://ya.ru").Return("", storage.ErrURLExists).MinTimes(1)
 	m.EXPECT().Add(context.Background(), "1https://ya.ru").Return("", app.ErrURLFormat).AnyTimes()
@@ -32,36 +33,36 @@ func TestCreateShortHandler(t *testing.T) {
 		{
 			name:        "method error",
 			method:      http.MethodGet,
-			contentType: "text/plain",
-			body:        []byte(`<num>3333</num>`),
+			contentType: "application/json",
+			body:        []byte(`{"url":"https://ya.ru"}`),
 			statusCode:  http.StatusBadRequest,
 		},
 		{
 			name:        "content type error",
 			method:      http.MethodPost,
-			contentType: "application/json",
-			body:        []byte(`<num>3333</num>`),
+			contentType: "text/plain",
+			body:        []byte(`{"url":"https://ya.ru"}`),
 			statusCode:  http.StatusBadRequest,
 		},
 		{
 			name:        "success",
 			method:      http.MethodPost,
-			contentType: "text/plain",
-			body:        []byte(`https://ya.ru`),
+			contentType: "application/json",
+			body:        []byte(`{"url":"https://ya.ru"}`),
 			statusCode:  http.StatusCreated,
 		},
 		{
 			name:        "conflict",
 			method:      http.MethodPost,
-			contentType: "text/plain",
-			body:        []byte(`https://ya.ru`),
+			contentType: "application/json",
+			body:        []byte(`{"url":"https://ya.ru"}`),
 			statusCode:  http.StatusConflict,
 		},
 		{
 			name:        "invalid url error",
 			method:      http.MethodPost,
-			contentType: "text/plain",
-			body:        []byte(`1https://ya.ru`),
+			contentType: "application/json",
+			body:        []byte(`{"url":"1https://ya.ru"}`),
 			statusCode:  http.StatusInternalServerError,
 		},
 	}
@@ -75,9 +76,9 @@ func TestCreateShortHandler(t *testing.T) {
 				body = bytes.NewBuffer(tt.body)
 			}
 
-			req := httptest.NewRequest(tt.method, "/api/user/orders", body)
+			req := httptest.NewRequest(tt.method, "/api/shorten", body)
 			req.Header.Add("Content-Type", tt.contentType)
-			CreateShortHandler(m)(rw, req)
+			CreateJSONShortHandler(m)(rw, req)
 
 			resp := rw.Result()
 			assert.Equal(t, tt.statusCode, resp.StatusCode, "Error http status code")

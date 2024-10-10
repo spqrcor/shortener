@@ -7,20 +7,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"shortener/internal/app"
 	"shortener/internal/mocks"
 	"shortener/internal/storage"
 	"testing"
 )
 
-func TestCreateShortHandler(t *testing.T) {
+func TestCreateJSONBatchHandler(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	m := mocks.NewMockStorage(mockCtrl)
-	m.EXPECT().Add(context.Background(), "https://ya.ru").Return("-", nil).MaxTimes(1)
-	m.EXPECT().Add(context.Background(), "https://ya.ru").Return("", storage.ErrURLExists).MinTimes(1)
-	m.EXPECT().Add(context.Background(), "1https://ya.ru").Return("", app.ErrURLFormat).AnyTimes()
+	m.EXPECT().BatchAdd(context.Background(), []storage.BatchInputParams{
+		{
+			CorrelationID: "b9253cb9-03e9-4850-a3cb-16e84e9f8a37",
+			URL:           "https://ya.ru",
+		},
+	}).Return([]storage.BatchOutputParams{
+		{
+			CorrelationID: "b9253cb9-03e9-4850-a3cb-16e84e9f8a37",
+			ShortURL:      "http://localhost/xxxxxx",
+		},
+	}, nil).AnyTimes()
 
 	tests := []struct {
 		name        string
@@ -32,37 +39,30 @@ func TestCreateShortHandler(t *testing.T) {
 		{
 			name:        "method error",
 			method:      http.MethodGet,
-			contentType: "text/plain",
-			body:        []byte(`<num>3333</num>`),
+			contentType: "application/json",
+			body:        []byte(`{"url":"https://ya.ru"}`),
 			statusCode:  http.StatusBadRequest,
 		},
 		{
 			name:        "content type error",
 			method:      http.MethodPost,
-			contentType: "application/json",
-			body:        []byte(`<num>3333</num>`),
+			contentType: "text/plain",
+			body:        []byte(`{"url":"https://ya.ru"}`),
 			statusCode:  http.StatusBadRequest,
 		},
 		{
 			name:        "success",
 			method:      http.MethodPost,
-			contentType: "text/plain",
-			body:        []byte(`https://ya.ru`),
+			contentType: "application/json",
+			body:        []byte(`[{"correlation_id": "b9253cb9-03e9-4850-a3cb-16e84e9f8a37", "original_url": "https://ya.ru"}]`),
 			statusCode:  http.StatusCreated,
 		},
 		{
-			name:        "conflict",
+			name:        "empty input",
 			method:      http.MethodPost,
-			contentType: "text/plain",
-			body:        []byte(`https://ya.ru`),
-			statusCode:  http.StatusConflict,
-		},
-		{
-			name:        "invalid url error",
-			method:      http.MethodPost,
-			contentType: "text/plain",
-			body:        []byte(`1https://ya.ru`),
-			statusCode:  http.StatusInternalServerError,
+			contentType: "application/json",
+			body:        []byte(`[]`),
+			statusCode:  http.StatusBadRequest,
 		},
 	}
 
@@ -75,9 +75,9 @@ func TestCreateShortHandler(t *testing.T) {
 				body = bytes.NewBuffer(tt.body)
 			}
 
-			req := httptest.NewRequest(tt.method, "/api/user/orders", body)
+			req := httptest.NewRequest(tt.method, "/api/shorten/batch", body)
 			req.Header.Add("Content-Type", tt.contentType)
-			CreateShortHandler(m)(rw, req)
+			CreateJSONBatchHandler(m)(rw, req)
 
 			resp := rw.Result()
 			assert.Equal(t, tt.statusCode, resp.StatusCode, "Error http status code")

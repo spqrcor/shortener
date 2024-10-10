@@ -1,11 +1,14 @@
 package app
 
 import (
-	"errors"
+	"fmt"
 	"math/rand"
 	"net/url"
 	"time"
 )
+
+var ErrURLFormat = fmt.Errorf("url format error")
+var ErrURLEmpty = fmt.Errorf("url empty error")
 
 func GenerateShortURL(stringLength int, baseURL string) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -20,12 +23,12 @@ func GenerateShortURL(stringLength int, baseURL string) string {
 
 func ValidateURL(inputURL string) error {
 	if inputURL == "" {
-		return errors.New("входящее значение пустое")
+		return ErrURLEmpty
 	}
 
 	_, err := url.ParseRequestURI(inputURL)
 	if err != nil {
-		return errors.New("неверный формат URL")
+		return ErrURLFormat
 	}
 	return nil
 }
