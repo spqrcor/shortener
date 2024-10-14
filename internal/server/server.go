@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 	"net/http"
+	"net/http/pprof"
 	"shortener/internal/authenticate"
 	"shortener/internal/config"
 	"shortener/internal/handlers"
@@ -72,6 +73,12 @@ func (s *HTTPServer) Start() error {
 	r.Get("/ping", handlers.PingHandler())
 	r.Get("/api/user/urls", handlers.SearchByUserHandler(s.storage))
 	r.Delete("/api/user/urls", handlers.RemoveShortHandler(s.batchRemove))
+
+	r.HandleFunc("/debug/pprof/", pprof.Index)
+	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
