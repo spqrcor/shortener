@@ -30,9 +30,16 @@ type DBStorage struct {
 	DB     *sql.DB
 }
 
+// ErrURLExists URL существует
 var ErrURLExists = fmt.Errorf("url exists")
+
+// ErrUserNotExists Пользователь не найден
 var ErrUserNotExists = fmt.Errorf("user not exists")
+
+// ErrShortIsRemoved шорткей был удален
 var ErrShortIsRemoved = fmt.Errorf("short is removed")
+
+// ErrKeyNotFound шорткей не найден
 var ErrKeyNotFound = fmt.Errorf("key not found")
 
 // CreateDBStorage создание db хранилища, config - конфиг, logger - логгер

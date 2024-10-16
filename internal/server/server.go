@@ -13,6 +13,7 @@ import (
 	"shortener/internal/storage"
 )
 
+// HTTPServer тип http server
 type HTTPServer struct {
 	config      config.Config
 	logger      *zap.Logger
@@ -21,6 +22,7 @@ type HTTPServer struct {
 	batchRemove services.BatchRemover
 }
 
+// NewServer создание HTTPServer, opts набор параметров
 func NewServer(opts ...func(*HTTPServer)) *HTTPServer {
 	server := &HTTPServer{}
 	for _, opt := range opts {
@@ -29,36 +31,42 @@ func NewServer(opts ...func(*HTTPServer)) *HTTPServer {
 	return server
 }
 
+// WithLogger добавление logger
 func WithLogger(logger *zap.Logger) func(*HTTPServer) {
 	return func(h *HTTPServer) {
 		h.logger = logger
 	}
 }
 
+// WithConfig добавление config
 func WithConfig(config config.Config) func(*HTTPServer) {
 	return func(h *HTTPServer) {
 		h.config = config
 	}
 }
 
+// WithStorage добавление storage
 func WithStorage(storage storage.Storage) func(*HTTPServer) {
 	return func(h *HTTPServer) {
 		h.storage = storage
 	}
 }
 
+// WithAuthenticate добавление auth
 func WithAuthenticate(auth authenticate.Auth) func(*HTTPServer) {
 	return func(h *HTTPServer) {
 		h.auth = auth
 	}
 }
 
+// WithBatchRemove добавление batchRemove
 func WithBatchRemove(batchRemove services.BatchRemover) func(*HTTPServer) {
 	return func(h *HTTPServer) {
 		h.batchRemove = batchRemove
 	}
 }
 
+// Start старт сервера
 func (s *HTTPServer) Start() error {
 	r := chi.NewRouter()
 	r.Use(loggerMiddleware(s.logger))

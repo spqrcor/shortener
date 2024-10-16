@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
+// ErrURLFormat Ошибка формата URL
 var ErrURLFormat = fmt.Errorf("url format error")
+
+// ErrURLEmpty Ошибка, пустой URL
 var ErrURLEmpty = fmt.Errorf("url empty error")
 
 // GenerateShortURL генерирует short url, stringLength - длина строки на выходе, baseURL - базовый URL
