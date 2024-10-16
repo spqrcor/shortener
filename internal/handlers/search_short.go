@@ -6,6 +6,7 @@ import (
 	"shortener/internal/storage"
 )
 
+// SearchShortHandler обработчик роута /{id}
 func SearchShortHandler(s storage.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {

@@ -1,3 +1,4 @@
+// Package config формирование и хранение конфига
 package config
 
 import (
@@ -9,6 +10,7 @@ import (
 	"time"
 )
 
+// Config тип для хранение конфига
 type Config struct {
 	Addr              string        `env:"SERVER_ADDRESS"`
 	BaseURL           string        `env:"BASE_URL"`
@@ -21,6 +23,7 @@ type Config struct {
 	TokenExp          time.Duration `env:"TOKEN_EXPIRATION"`
 }
 
+// cfg переменная конфига
 var cfg = Config{
 	Addr:              "localhost:8080",
 	BaseURL:           "http://localhost:8080",
@@ -35,6 +38,7 @@ var cfg = Config{
 
 var once sync.Once
 
+// NewConfig получение конфига
 func NewConfig() Config {
 	once.Do(func() {
 		flag.StringVar(&cfg.Addr, "a", cfg.Addr, "address and port to run server")

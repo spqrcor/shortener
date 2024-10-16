@@ -9,6 +9,7 @@ import (
 	"shortener/internal/services"
 )
 
+// RemoveShortHandler обработчик роута DELETE /api/user/urls
 func RemoveShortHandler(b services.BatchRemover) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodDelete {

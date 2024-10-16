@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// loggerMiddleware middleware для логирования запросов, logger - логгер
 func loggerMiddleware(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

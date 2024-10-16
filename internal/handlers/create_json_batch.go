@@ -7,6 +7,7 @@ import (
 	"shortener/internal/storage"
 )
 
+// CreateJSONBatchHandler обработчик роута /api/shorten/batch
 func CreateJSONBatchHandler(s storage.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if !isValidInputParams(req, inputParams{Method: http.MethodPost, ContentType: "application/json"}) {

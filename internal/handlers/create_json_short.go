@@ -8,6 +8,7 @@ import (
 	"shortener/internal/storage"
 )
 
+// CreateJSONShortHandler обработчик роута /api/shorten
 func CreateJSONShortHandler(s storage.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if !isValidInputParams(req, inputParams{Method: http.MethodPost, ContentType: "application/json"}) {

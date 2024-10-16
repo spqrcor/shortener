@@ -1,3 +1,4 @@
+// Package services сервисы
 package services
 
 import (
@@ -8,17 +9,21 @@ import (
 	"sync"
 )
 
+// batchSize размер пачки для группового удаление
 const batchSize = 25
 
+// BatchRemover интерфейс сервиса группового удаления
 type BatchRemover interface {
 	DeleteShortURL(UserID uuid.UUID, shorts []string)
 }
 
+// BatchRemove тип сервиса группового удаления
 type BatchRemove struct {
 	logger  *zap.Logger
 	storage storage.Storage
 }
 
+// NewBatchRemoveService создание сервиса группового удаления, logger - логгер, storage - сервис хранилища
 func NewBatchRemoveService(logger *zap.Logger, storage storage.Storage) *BatchRemove {
 	return &BatchRemove{
 		logger:  logger,
@@ -26,6 +31,7 @@ func NewBatchRemoveService(logger *zap.Logger, storage storage.Storage) *BatchRe
 	}
 }
 
+// DeleteShortURL удаление записей, UserID - guid пользователя, shorts массив записей
 func (b *BatchRemove) DeleteShortURL(UserID uuid.UUID, shorts []string) {
 	urlChan := make(chan string, len(shorts))
 	var wg sync.WaitGroup

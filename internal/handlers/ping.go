@@ -6,6 +6,7 @@ import (
 	"shortener/internal/db"
 )
 
+// PingHandler обработчик роута /ping
 func PingHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		conf := config.NewConfig()

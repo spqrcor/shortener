@@ -7,6 +7,7 @@ import (
 	"shortener/internal/storage"
 )
 
+// CreateShortHandler обработчик роута /
 func CreateShortHandler(s storage.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if !isValidInputParams(req, inputParams{Method: http.MethodPost, ContentType: "text/plain"}) {

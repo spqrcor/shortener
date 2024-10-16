@@ -11,12 +11,14 @@ import (
 	"shortener/internal/config"
 )
 
+// FileStorage тип file хранилища
 type FileStorage struct {
 	config config.Config
 	logger *zap.Logger
 	Store  map[string]string
 }
 
+// CreateFileStorage создание file хранилища, config - конфиг, logger - логгер
 func CreateFileStorage(config config.Config, logger *zap.Logger) Storage {
 	data, err := os.ReadFile(config.FileStoragePath)
 	if err != nil {
@@ -42,6 +44,7 @@ func CreateFileStorage(config config.Config, logger *zap.Logger) Storage {
 	}
 }
 
+// Add добавление, ctx - контекст, inputURL - входящий url
 func (f FileStorage) Add(ctx context.Context, inputURL string) (string, error) {
 	if err := app.ValidateURL(inputURL); err != nil {
 		return "", err
@@ -52,6 +55,7 @@ func (f FileStorage) Add(ctx context.Context, inputURL string) (string, error) {
 	return genURL, nil
 }
 
+// Find поиск, ctx - контекст, key - шорткей
 func (f FileStorage) Find(ctx context.Context, key string) (string, error) {
 	redirectURL, ok := f.Store[f.config.BaseURL+key]
 	if ok {
@@ -60,6 +64,7 @@ func (f FileStorage) Find(ctx context.Context, key string) (string, error) {
 	return "", errors.New("ключ не найден")
 }
 
+// updateFileStorage обновление файла
 func (f FileStorage) updateFileStorage(store map[string]string) {
 	x, err := json.Marshal(store)
 	if err != nil {
@@ -73,6 +78,7 @@ func (f FileStorage) updateFileStorage(store map[string]string) {
 	}
 }
 
+// BatchAdd групповое добавление, ctx - контекст, inputURLs массив данных
 func (f FileStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
 	var output []BatchOutputParams
 	for _, inputURL := range inputURLs {
@@ -88,11 +94,13 @@ func (f FileStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams)
 	return output, nil
 }
 
+// FindByUser поиск по пользователю, ctx - контекст
 func (f FileStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, error) {
 	var output []FindByUserOutputParams
 	return output, nil
 }
 
+// Remove удаление, ctx - контекст, UserID - guid пользователя, shorts - массив шорткеев
 func (f FileStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
 	return nil
 }

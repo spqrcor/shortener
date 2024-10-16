@@ -6,6 +6,7 @@ import (
 	"shortener/internal/storage"
 )
 
+// SearchByUserHandler обработчик роута GET /api/user/urls
 func SearchByUserHandler(s storage.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {

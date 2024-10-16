@@ -1,3 +1,4 @@
+// Package server http server
 package server
 
 import (

@@ -15,13 +15,15 @@ import (
 	"time"
 )
 
+// sql запросы
 const (
-	addQuery         = "INSERT INTO url_list (short_url, url, user_id) VALUES ($1, $2, $3) ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url"
-	findByShortQuery = "SELECT url, deleted_at FROM url_list WHERE short_url = $1"
-	findByUserQuery  = "SELECT short_url, url FROM url_list WHERE user_id = $1 AND deleted_at IS NULL"
-	removeQuery      = "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)"
+	addQuery         = "INSERT INTO url_list (short_url, url, user_id) VALUES ($1, $2, $3) ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url" // добавление записи
+	findByShortQuery = "SELECT url, deleted_at FROM url_list WHERE short_url = $1"                                                                                // поиск записи
+	findByUserQuery  = "SELECT short_url, url FROM url_list WHERE user_id = $1 AND deleted_at IS NULL"                                                            // поиск записей пользователя
+	removeQuery      = "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)"                                  // удаление записи
 )
 
+// DBStorage тип db хранилища
 type DBStorage struct {
 	config config.Config
 	logger *zap.Logger
@@ -33,6 +35,7 @@ var ErrUserNotExists = fmt.Errorf("user not exists")
 var ErrShortIsRemoved = fmt.Errorf("short is removed")
 var ErrKeyNotFound = fmt.Errorf("key not found")
 
+// CreateDBStorage создание db хранилища, config - конфиг, logger - логгер
 func CreateDBStorage(config config.Config, logger *zap.Logger) Storage {
 	res, err := db.Connect(config.DatabaseDSN)
 	if err != nil {
@@ -49,6 +52,7 @@ func CreateDBStorage(config config.Config, logger *zap.Logger) Storage {
 	}
 }
 
+// Add добавление, ctx - контекст, inputURL - входящий url
 func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
 	if err := app.ValidateURL(inputURL); err != nil {
 		return "", err
@@ -67,6 +71,7 @@ func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
 	return genURL, nil
 }
 
+// Find поиск, ctx - контекст, key - шорткей
 func (d DBStorage) Find(ctx context.Context, key string) (string, error) {
 	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
@@ -83,7 +88,8 @@ func (d DBStorage) Find(ctx context.Context, key string) (string, error) {
 	return originalURL, nil
 }
 
-func replaceSQL(stmt, pattern string, len int) string {
+// replaceSQL хелпер для multiple insert, stmt - запрос, pattern - паттерн, len - длина
+func replaceSQL(stmt string, pattern string, len int) string {
 	pattern += ","
 	stmt = fmt.Sprintf(stmt, strings.Repeat(pattern, len))
 	n := 0
@@ -95,6 +101,7 @@ func replaceSQL(stmt, pattern string, len int) string {
 	return strings.TrimSuffix(stmt, ",")
 }
 
+// getUserOrNull хелпер для получения null значения пользователя, ctx - контекст
 func getUserOrNull(ctx context.Context) sql.NullString {
 	id, ok := ctx.Value(authenticate.ContextUserID).(uuid.UUID)
 	if ok {
@@ -106,6 +113,7 @@ func getUserOrNull(ctx context.Context) sql.NullString {
 	return sql.NullString{}
 }
 
+// BatchAdd групповое добавление, ctx - контекст, inputURLs массив данных
 func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
 	var output []BatchOutputParams
 	UserID := getUserOrNull(ctx)
@@ -133,6 +141,7 @@ func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) (
 	return output, nil
 }
 
+// FindByUser поиск по пользователю, ctx - контекст
 func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, error) {
 	var output []FindByUserOutputParams
 	UserID, ok := ctx.Value(authenticate.ContextUserID).(uuid.UUID)
@@ -165,6 +174,7 @@ func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, er
 	return output, nil
 }
 
+// getFormatShorts форматирование шорткеев, shorts - массив даных
 func (d DBStorage) getFormatShorts(shorts []string) []string {
 	for i, short := range shorts {
 		shorts[i] = d.config.BaseURL + "/" + short
@@ -172,6 +182,7 @@ func (d DBStorage) getFormatShorts(shorts []string) []string {
 	return shorts
 }
 
+// Remove удаление, ctx - контекст, UserID - guid пользователя, shorts - массив шорткеев
 func (d DBStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
 	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()

@@ -8,6 +8,7 @@ import (
 	"shortener/internal/authenticate"
 )
 
+// authenticateMiddleware middleware для аутентификации, logger - логгер, auth - сервис аутентификации
 func authenticateMiddleware(logger *zap.Logger, auth authenticate.Auth) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
