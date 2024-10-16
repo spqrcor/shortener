@@ -43,6 +43,19 @@ func TestMemoryStorage_Add(t *testing.T) {
 	}
 }
 
+func BenchmarkMemoryStorage_Add(b *testing.B) {
+	m := MemoryStorage{
+		Store: map[string]string{},
+	}
+	b.Run("default", func(b *testing.B) {
+		inputURL := "https://ya.ru"
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = m.Add(context.Background(), inputURL)
+		}
+	})
+}
+
 func TestMemoryStorage_BatchAdd(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -52,7 +65,7 @@ func TestMemoryStorage_BatchAdd(t *testing.T) {
 		{
 			"Error add",
 			[]BatchInputParams{
-				BatchInputParams{
+				{
 					CorrelationID: "b9253cb9-03e9-4850-a3cb-16e84e9f8a37",
 					URL:           "1http://lenta.ru",
 				},
@@ -62,7 +75,7 @@ func TestMemoryStorage_BatchAdd(t *testing.T) {
 		{
 			"Current add",
 			[]BatchInputParams{
-				BatchInputParams{
+				{
 					CorrelationID: "b9253cb9-03e9-4850-a3cb-16e84e9f8a37",
 					URL:           "http://lenta.ru",
 				},
@@ -79,6 +92,28 @@ func TestMemoryStorage_BatchAdd(t *testing.T) {
 			assert.Equal(t, tt.want, err == nil)
 		})
 	}
+}
+
+func BenchmarkMemoryStorage_BatchAdd(b *testing.B) {
+	m := MemoryStorage{
+		Store: map[string]string{},
+	}
+	b.Run("default", func(b *testing.B) {
+		data := []BatchInputParams{
+			{
+				CorrelationID: "b9253cb9-03e9-4850-a3cb-16e84e9f8a37",
+				URL:           "https://lenta.ru",
+			},
+			{
+				CorrelationID: "49253cb9-03e9-4650-a3cb-16e84e9f8a37",
+				URL:           "https://ya.ru",
+			},
+		}
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = m.BatchAdd(context.Background(), data)
+		}
+	})
 }
 
 func TestMemoryStorage_Find(t *testing.T) {
@@ -108,4 +143,18 @@ func TestMemoryStorage_Find(t *testing.T) {
 			assert.Equal(t, tt.want, err == nil)
 		})
 	}
+}
+
+func BenchmarkMemoryStorage_Find(b *testing.B) {
+	m := MemoryStorage{
+		Store:  map[string]string{"http://localhost:8080/fakeurl": "http://ya.ru"},
+		config: config.Config{BaseURL: "http://localhost:8080"},
+	}
+	b.Run("default", func(b *testing.B) {
+		inputURI := "/fakeurl"
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = m.Find(context.Background(), inputURI)
+		}
+	})
 }

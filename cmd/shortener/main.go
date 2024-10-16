@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	_ "net/http/pprof"
 	"shortener/internal/authenticate"
 	"shortener/internal/config"
 	"shortener/internal/logger"

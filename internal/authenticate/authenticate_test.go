@@ -10,6 +10,23 @@ import (
 	"testing"
 )
 
+func BenchmarkAuthenticate_GetUserIDFromCookie(b *testing.B) {
+	conf := config.NewConfig()
+	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
+	a := &Authenticate{
+		logger:    loggerRes,
+		secretKey: conf.SecretKey,
+		tokenExp:  conf.TokenExp,
+	}
+	b.Run("default", func(b *testing.B) {
+		cookieValue := "30316566363932392d373133392d363036632d393466312d303031353564336462623865da1bc3dd8b597c82ec439df707f6fc8e988ef19082aac7950957830c1bb4aa2a"
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = a.GetUserIDFromCookie(cookieValue)
+		}
+	})
+}
+
 func TestAuthenticate_GetUserIDFromCookie(t *testing.T) {
 	conf := config.NewConfig()
 	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
@@ -62,6 +79,23 @@ func TestAuthenticate_createCookie(t *testing.T) {
 	}
 }
 
+func BenchmarkAuthenticate_createCookie(b *testing.B) {
+	conf := config.NewConfig()
+	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
+	a := &Authenticate{
+		logger:    loggerRes,
+		secretKey: conf.SecretKey,
+		tokenExp:  conf.TokenExp,
+	}
+	b.Run("default", func(b *testing.B) {
+		userId := uuid.New()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = a.createCookie(userId)
+		}
+	})
+}
+
 func TestAuthenticate_createToken(t *testing.T) {
 	conf := config.NewConfig()
 	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
@@ -84,6 +118,23 @@ func TestAuthenticate_createToken(t *testing.T) {
 			assert.Nil(t, err)
 		})
 	}
+}
+
+func BenchmarkAuthenticate_createToken(b *testing.B) {
+	conf := config.NewConfig()
+	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
+	a := &Authenticate{
+		logger:    loggerRes,
+		secretKey: conf.SecretKey,
+		tokenExp:  conf.TokenExp,
+	}
+	b.Run("default", func(b *testing.B) {
+		userId := uuid.New()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = a.createToken(userId)
+		}
+	})
 }
 
 func TestNewAuthenticateService(t *testing.T) {
