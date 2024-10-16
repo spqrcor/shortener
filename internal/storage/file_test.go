@@ -63,7 +63,7 @@ func TestFileStorage_BatchAdd(t *testing.T) {
 		{
 			"Error add",
 			[]BatchInputParams{
-				BatchInputParams{
+				{
 					CorrelationID: "b9253cb9-03e9-4850-a3cb-16e84e9f8a37",
 					URL:           "1http://lenta.ru",
 				},
@@ -73,7 +73,7 @@ func TestFileStorage_BatchAdd(t *testing.T) {
 		{
 			"Current add",
 			[]BatchInputParams{
-				BatchInputParams{
+				{
 					CorrelationID: "b9253cb9-03e9-4850-a3cb-16e84e9f8a37",
 					URL:           "http://lenta.ru",
 				},
