@@ -88,10 +88,10 @@ func BenchmarkAuthenticate_createCookie(b *testing.B) {
 		tokenExp:  conf.TokenExp,
 	}
 	b.Run("default", func(b *testing.B) {
-		userId := uuid.New()
+		userID := uuid.New()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			_, _ = a.createCookie(userId)
+			_, _ = a.createCookie(userID)
 		}
 	})
 }
@@ -129,10 +129,10 @@ func BenchmarkAuthenticate_createToken(b *testing.B) {
 		tokenExp:  conf.TokenExp,
 	}
 	b.Run("default", func(b *testing.B) {
-		userId := uuid.New()
+		userID := uuid.New()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			_, _ = a.createToken(userId)
+			_, _ = a.createToken(userID)
 		}
 	})
 }
