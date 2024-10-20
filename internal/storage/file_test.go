@@ -3,11 +3,26 @@ package storage
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+	"reflect"
 	"shortener/internal/config"
+	"shortener/internal/logger"
 	"testing"
 )
 
+func TestCreateFileStorage(t *testing.T) {
+	conf := config.NewConfig()
+	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
+
+	if conf.FileStoragePath == "" {
+		t.Skip("Skipping testing...")
+	}
+	store := CreateFileStorage(conf, loggerRes)
+	assert.Equal(t, reflect.TypeOf(store).String() == "storage.FileStorage", true)
+}
+
 func TestFileStorage_Add(t *testing.T) {
+	conf := config.NewConfig()
 	tests := []struct {
 		name     string
 		inputURL string
@@ -24,7 +39,7 @@ func TestFileStorage_Add(t *testing.T) {
 			true,
 		},
 	}
-	if config.Cfg.FileStoragePath == "" {
+	if conf.FileStoragePath == "" {
 		t.Skip("Skipping testing...")
 	}
 	for _, tt := range tests {
@@ -39,6 +54,7 @@ func TestFileStorage_Add(t *testing.T) {
 }
 
 func TestFileStorage_BatchAdd(t *testing.T) {
+	conf := config.NewConfig()
 	tests := []struct {
 		name        string
 		inputParams []BatchInputParams
@@ -47,7 +63,7 @@ func TestFileStorage_BatchAdd(t *testing.T) {
 		{
 			"Error add",
 			[]BatchInputParams{
-				BatchInputParams{
+				{
 					CorrelationID: "b9253cb9-03e9-4850-a3cb-16e84e9f8a37",
 					URL:           "1http://lenta.ru",
 				},
@@ -57,7 +73,7 @@ func TestFileStorage_BatchAdd(t *testing.T) {
 		{
 			"Current add",
 			[]BatchInputParams{
-				BatchInputParams{
+				{
 					CorrelationID: "b9253cb9-03e9-4850-a3cb-16e84e9f8a37",
 					URL:           "http://lenta.ru",
 				},
@@ -65,7 +81,7 @@ func TestFileStorage_BatchAdd(t *testing.T) {
 			true,
 		},
 	}
-	if config.Cfg.FileStoragePath == "" {
+	if conf.FileStoragePath == "" {
 		t.Skip("Skipping testing...")
 	}
 	for _, tt := range tests {
@@ -99,7 +115,8 @@ func TestFileStorage_Find(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := FileStorage{
-				Store: map[string]string{"http://localhost:8080/fakeurl": "http://ya.ru"},
+				Store:  map[string]string{"http://localhost:8080/fakeurl": "http://ya.ru"},
+				config: config.Config{BaseURL: "http://localhost:8080"},
 			}
 			_, err := m.Find(context.Background(), tt.inputURI)
 			assert.Equal(t, tt.want, err == nil)
