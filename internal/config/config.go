@@ -1,3 +1,4 @@
+// Package config формирование и хранение конфига
 package config
 
 import (
@@ -5,8 +6,11 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
+	"sync"
+	"time"
 )
 
+// Config тип для хранение конфига
 type Config struct {
 	Addr              string        `env:"SERVER_ADDRESS"`
 	BaseURL           string        `env:"BASE_URL"`
@@ -14,39 +18,52 @@ type Config struct {
 	LogLevel          zapcore.Level `env:"LOG_LEVEL"`
 	FileStoragePath   string        `env:"FILE_STORAGE_PATH"`
 	DatabaseDSN       string        `env:"DATABASE_DSN"`
+	QueryTimeOut      time.Duration `env:"QUERY_TIME_OUT"`
+	SecretKey         string        `env:"SECRET_KEY"`
+	TokenExp          time.Duration `env:"TOKEN_EXPIRATION"`
 }
 
-var Cfg = Config{
+// cfg переменная конфига
+var cfg = Config{
 	Addr:              "localhost:8080",
 	BaseURL:           "http://localhost:8080",
 	ShortStringLength: 6,
 	LogLevel:          zap.InfoLevel,
 	FileStoragePath:   "",
 	DatabaseDSN:       "",
+	QueryTimeOut:      3,
+	SecretKey:         "KLJ-fo3Fksd3fl!=",
+	TokenExp:          time.Hour * 3,
 }
 
-func Init() {
-	flag.StringVar(&Cfg.Addr, "a", Cfg.Addr, "address and port to run server")
-	flag.StringVar(&Cfg.BaseURL, "b", Cfg.BaseURL, "base url")
-	flag.StringVar(&Cfg.FileStoragePath, "f", Cfg.FileStoragePath, "file storage path")
-	flag.StringVar(&Cfg.DatabaseDSN, "d", Cfg.DatabaseDSN, "database dsn")
-	flag.Parse()
+var once sync.Once
 
-	serverAddressEnv, findAddress := os.LookupEnv("SERVER_ADDRESS")
-	serverBaseURLEnv, findBaseURL := os.LookupEnv("BASE_URL")
-	serverStoragePath, findStoragePath := os.LookupEnv("FILE_STORAGE_PATH")
-	serverDatabaseDSN, findDatabaseDSN := os.LookupEnv("DATABASE_DSN")
+// NewConfig получение конфига
+func NewConfig() Config {
+	once.Do(func() {
+		flag.StringVar(&cfg.Addr, "a", cfg.Addr, "address and port to run server")
+		flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "base url")
+		flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file storage path")
+		flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "database dsn")
+		flag.Parse()
 
-	if findAddress {
-		Cfg.Addr = serverAddressEnv
-	}
-	if findBaseURL {
-		Cfg.BaseURL = serverBaseURLEnv
-	}
-	if findStoragePath {
-		Cfg.FileStoragePath = serverStoragePath
-	}
-	if findDatabaseDSN {
-		Cfg.DatabaseDSN = serverDatabaseDSN
-	}
+		serverAddressEnv, findAddress := os.LookupEnv("SERVER_ADDRESS")
+		serverBaseURLEnv, findBaseURL := os.LookupEnv("BASE_URL")
+		serverStoragePath, findStoragePath := os.LookupEnv("FILE_STORAGE_PATH")
+		serverDatabaseDSN, findDatabaseDSN := os.LookupEnv("DATABASE_DSN")
+
+		if findAddress {
+			cfg.Addr = serverAddressEnv
+		}
+		if findBaseURL {
+			cfg.BaseURL = serverBaseURLEnv
+		}
+		if findStoragePath {
+			cfg.FileStoragePath = serverStoragePath
+		}
+		if findDatabaseDSN {
+			cfg.DatabaseDSN = serverDatabaseDSN
+		}
+	})
+	return cfg
 }

@@ -1,54 +1,102 @@
+// Package authenticate аутентификация
 package authenticate
 
 import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"net/http"
-	"shortener/internal/logger"
 	"strings"
 	"time"
 )
 
-type Claims struct {
+// claims тип по работе с токеном
+type claims struct {
 	jwt.RegisteredClaims
 	UserID uuid.UUID
 }
+
+// ContextKey тип для хранения UserID в контексте
 type ContextKey string
 
+// ContextUserID для хранения UserID в контексте
 var ContextUserID ContextKey = "UserID"
 
-const tokenExp = time.Hour * 3
-const secretKey = "KLJ-fo3Fksd3fl!="
+// Auth интерфейс аутентификации
+type Auth interface {
+	GetUserIDFromCookie(tokenString string) (uuid.UUID, error)
+	SetCookie(rw http.ResponseWriter, UserID uuid.UUID)
+}
 
-func CreateCookie(UserID uuid.UUID) (http.Cookie, error) {
-	token, err := createToken(UserID)
+// Authenticate аутентификация
+type Authenticate struct {
+	logger    *zap.Logger
+	secretKey string
+	tokenExp  time.Duration
+}
+
+// NewAuthenticateService создание Authenticate, opts - набор параметров
+func NewAuthenticateService(opts ...func(*Authenticate)) *Authenticate {
+	auth := &Authenticate{}
+	for _, opt := range opts {
+		opt(auth)
+	}
+	return auth
+}
+
+// WithLogger добавление logger
+func WithLogger(logger *zap.Logger) func(*Authenticate) {
+	return func(a *Authenticate) {
+		a.logger = logger
+	}
+}
+
+// WithSecretKey добавление secretKey
+func WithSecretKey(secretKey string) func(*Authenticate) {
+	return func(a *Authenticate) {
+		a.secretKey = secretKey
+	}
+}
+
+// WithTokenExp добавление tokenExp
+func WithTokenExp(tokenExp time.Duration) func(*Authenticate) {
+	return func(a *Authenticate) {
+		a.tokenExp = tokenExp
+	}
+}
+
+// createCookie создание cookie, UserID - guid пользователя
+func (a *Authenticate) createCookie(UserID uuid.UUID) (http.Cookie, error) {
+	token, err := a.createToken(UserID)
 	if err != nil {
 		return http.Cookie{}, err
 	}
-	return http.Cookie{Name: "Authorization", Value: token, Expires: time.Now().Add(tokenExp), HttpOnly: true, Path: "/"}, nil
+	return http.Cookie{Name: "Authorization", Value: token, Expires: time.Now().Add(a.tokenExp), HttpOnly: true, Path: "/"}, nil
 }
 
-func createToken(UserID uuid.UUID) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+// createToken создание токена, UserID - guid пользователя
+func (a *Authenticate) createToken(UserID uuid.UUID) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(a.tokenExp)),
 		},
 		UserID: UserID,
 	})
 
-	tokenString, err := token.SignedString([]byte(secretKey))
+	tokenString, err := token.SignedString([]byte(a.secretKey))
 	if err != nil {
 		return "", err
 	}
 	return "Bearer " + tokenString, nil
 }
 
-func GetUserIDFromCookie(tokenString string) (uuid.UUID, error) {
-	claims := &Claims{}
+// GetUserIDFromCookie получение UserID из токена, tokenString - токен
+func (a *Authenticate) GetUserIDFromCookie(tokenString string) (uuid.UUID, error) {
+	claims := &claims{}
 	token, err := jwt.ParseWithClaims(strings.TrimPrefix(tokenString, "Bearer "), claims,
 		func(t *jwt.Token) (interface{}, error) {
-			return []byte(secretKey), nil
+			return []byte(a.secretKey), nil
 		})
 	if err != nil {
 		return uuid.Nil, err
@@ -60,10 +108,11 @@ func GetUserIDFromCookie(tokenString string) (uuid.UUID, error) {
 	return claims.UserID, nil
 }
 
-func SetCookie(rw http.ResponseWriter, UserID uuid.UUID) {
-	cookie, err := CreateCookie(UserID)
+// SetCookie установка cookie, rw - http.ResponseWriter, UserID - guid пользователя
+func (a *Authenticate) SetCookie(rw http.ResponseWriter, UserID uuid.UUID) {
+	cookie, err := a.createCookie(UserID)
 	if err != nil {
-		logger.Log.Error(err.Error())
+		a.logger.Error(err.Error())
 	} else {
 		http.SetCookie(rw, &cookie)
 	}

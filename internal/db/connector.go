@@ -1,20 +1,18 @@
+// Package db работа с db
 package db
 
 import (
 	"database/sql"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"shortener/internal/config"
-	"shortener/internal/logger"
 )
 
-func Connect() (*sql.DB, error) {
-	db, err := sql.Open("pgx", config.Cfg.DatabaseDSN)
+// Connect соединение с db, DatabaseDSN - параметры подключения
+func Connect(DatabaseDSN string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", DatabaseDSN)
 	if err != nil {
-		logger.Log.Fatal(err.Error())
 		return nil, err
 	}
 	if err := db.Ping(); err != nil {
-		logger.Log.Error(err.Error())
 		return nil, err
 	}
 	return db, nil

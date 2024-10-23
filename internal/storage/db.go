@@ -3,52 +3,73 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"shortener/internal/app"
 	"shortener/internal/authenticate"
 	"shortener/internal/config"
 	"shortener/internal/db"
-	"shortener/internal/logger"
 	"strconv"
 	"strings"
 	"time"
 )
 
+// sql запросы
+const (
+	addQuery         = "INSERT INTO url_list (short_url, url, user_id) VALUES ($1, $2, $3) ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url" // добавление записи
+	findByShortQuery = "SELECT url, deleted_at FROM url_list WHERE short_url = $1"                                                                                // поиск записи
+	findByUserQuery  = "SELECT short_url, url FROM url_list WHERE user_id = $1 AND deleted_at IS NULL"                                                            // поиск записей пользователя
+	removeQuery      = "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)"                                  // удаление записи
+)
+
+// DBStorage тип db хранилища
 type DBStorage struct {
-	DB *sql.DB
+	config config.Config
+	logger *zap.Logger
+	DB     *sql.DB
 }
 
+// ErrURLExists URL существует
 var ErrURLExists = fmt.Errorf("url exists")
+
+// ErrUserNotExists Пользователь не найден
 var ErrUserNotExists = fmt.Errorf("user not exists")
+
+// ErrShortIsRemoved шорткей был удален
 var ErrShortIsRemoved = fmt.Errorf("short is removed")
 
-func CreateDBStorage() {
-	res, err := db.Connect()
+// ErrKeyNotFound шорткей не найден
+var ErrKeyNotFound = fmt.Errorf("key not found")
+
+// CreateDBStorage создание db хранилища, config - конфиг, logger - логгер
+func CreateDBStorage(config config.Config, logger *zap.Logger) Storage {
+	res, err := db.Connect(config.DatabaseDSN)
 	if err != nil {
-		logger.Log.Fatal(err.Error())
+		logger.Fatal(err.Error())
+	}
+	if err := db.Migrate(res); err != nil {
+		logger.Fatal(err.Error())
 	}
 
-	db.Migrate(res)
-
-	Source = DBStorage{
-		DB: res,
+	return DBStorage{
+		config: config,
+		logger: logger,
+		DB:     res,
 	}
 }
 
+// Add добавление, ctx - контекст, inputURL - входящий url
 func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
-	err := app.ValidateURL(inputURL)
-	if err != nil {
+	if err := app.ValidateURL(inputURL); err != nil {
 		return "", err
 	}
 
 	baseShortURL := ""
-	genURL := app.GenerateShortURL()
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	genURL := app.GenerateShortURL(d.config.ShortStringLength, d.config.BaseURL)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
-	err = d.DB.QueryRowContext(childCtx, "INSERT INTO url_list (short_url, url, user_id) VALUES ($1, $2, $3)  "+
-		"ON CONFLICT(url) DO UPDATE SET updated_at = NOW() RETURNING short_url", genURL, inputURL, ctx.Value(authenticate.ContextUserID)).Scan(&baseShortURL)
+	err := d.DB.QueryRowContext(childCtx, addQuery, genURL, inputURL, ctx.Value(authenticate.ContextUserID)).Scan(&baseShortURL)
 	if err != nil {
 		return "", err
 	} else if baseShortURL != genURL {
@@ -57,15 +78,16 @@ func (d DBStorage) Add(ctx context.Context, inputURL string) (string, error) {
 	return genURL, nil
 }
 
+// Find поиск, ctx - контекст, key - шорткей
 func (d DBStorage) Find(ctx context.Context, key string) (string, error) {
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
-	row := d.DB.QueryRowContext(childCtx, "SELECT url, deleted_at FROM url_list WHERE short_url = $1", config.Cfg.BaseURL+key)
+	row := d.DB.QueryRowContext(childCtx, findByShortQuery, d.config.BaseURL+key)
 
 	var originalURL string
 	var deletedAt sql.NullTime
 	if err := row.Scan(&originalURL, &deletedAt); err != nil {
-		return "", errors.New("ключ не найден")
+		return "", ErrKeyNotFound
 	}
 	if deletedAt.Valid {
 		return originalURL, ErrShortIsRemoved
@@ -73,7 +95,8 @@ func (d DBStorage) Find(ctx context.Context, key string) (string, error) {
 	return originalURL, nil
 }
 
-func replaceSQL(stmt, pattern string, len int) string {
+// replaceSQL хелпер для multiple insert, stmt - запрос, pattern - паттерн, len - длина
+func replaceSQL(stmt string, pattern string, len int) string {
 	pattern += ","
 	stmt = fmt.Sprintf(stmt, strings.Repeat(pattern, len))
 	n := 0
@@ -85,6 +108,7 @@ func replaceSQL(stmt, pattern string, len int) string {
 	return strings.TrimSuffix(stmt, ",")
 }
 
+// getUserOrNull хелпер для получения null значения пользователя, ctx - контекст
 func getUserOrNull(ctx context.Context) sql.NullString {
 	id, ok := ctx.Value(authenticate.ContextUserID).(uuid.UUID)
 	if ok {
@@ -96,6 +120,7 @@ func getUserOrNull(ctx context.Context) sql.NullString {
 	return sql.NullString{}
 }
 
+// BatchAdd групповое добавление, ctx - контекст, inputURLs массив данных
 func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error) {
 	var output []BatchOutputParams
 	UserID := getUserOrNull(ctx)
@@ -107,12 +132,12 @@ func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) (
 			return nil, err
 		}
 
-		genURL := app.GenerateShortURL()
+		genURL := app.GenerateShortURL(d.config.ShortStringLength, d.config.BaseURL)
 		vals = append(vals, genURL, row.URL, UserID)
 		output = append(output, BatchOutputParams{CorrelationID: row.CorrelationID, ShortURL: genURL})
 	}
 
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
 	stmt, _ := d.DB.PrepareContext(childCtx, replaceSQL("INSERT INTO url_list(short_url, url, user_id) VALUES %s", "(?, ?, ?)", len(inputURLs))+
 		" ON CONFLICT(short_url) DO UPDATE SET url = EXCLUDED.url, updated_at = NOW(), deleted_at = NULL")
@@ -123,6 +148,7 @@ func (d DBStorage) BatchAdd(ctx context.Context, inputURLs []BatchInputParams) (
 	return output, nil
 }
 
+// FindByUser поиск по пользователю, ctx - контекст
 func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, error) {
 	var output []FindByUserOutputParams
 	UserID, ok := ctx.Value(authenticate.ContextUserID).(uuid.UUID)
@@ -130,18 +156,18 @@ func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, er
 		return output, ErrUserNotExists
 	}
 
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
-	rows, err := d.DB.QueryContext(childCtx, "SELECT short_url, url FROM url_list WHERE user_id = $1 AND deleted_at IS NULL", UserID)
+	rows, err := d.DB.QueryContext(childCtx, findByUserQuery, UserID)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
-			logger.Log.Error(err.Error())
+			d.logger.Error(err.Error())
 		}
 		if err := rows.Err(); err != nil {
-			logger.Log.Error(err.Error())
+			d.logger.Error(err.Error())
 		}
 	}()
 
@@ -155,18 +181,20 @@ func (d DBStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, er
 	return output, nil
 }
 
-func getFormatShorts(shorts []string) []string {
+// getFormatShorts форматирование шорткеев, shorts - массив даных
+func (d DBStorage) getFormatShorts(shorts []string) []string {
 	for i, short := range shorts {
-		shorts[i] = config.Cfg.BaseURL + "/" + short
+		shorts[i] = d.config.BaseURL + "/" + short
 	}
 	return shorts
 }
 
+// Remove удаление, ctx - контекст, UserID - guid пользователя, shorts - массив шорткеев
 func (d DBStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
-	childCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
 	defer cancel()
 
-	_, err := d.DB.ExecContext(childCtx, "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)", UserID, getFormatShorts(shorts))
+	_, err := d.DB.ExecContext(childCtx, removeQuery, UserID, d.getFormatShorts(shorts))
 	if err != nil {
 		return err
 	}

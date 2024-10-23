@@ -1,32 +1,40 @@
+// Package app методы общего назначения
 package app
 
 import (
-	"errors"
+	"fmt"
 	"math/rand"
 	"net/url"
-	"shortener/internal/config"
 	"time"
 )
 
-func GenerateShortURL() string {
+// ErrURLFormat Ошибка формата URL
+var ErrURLFormat = fmt.Errorf("url format error")
+
+// ErrURLEmpty Ошибка, пустой URL
+var ErrURLEmpty = fmt.Errorf("url empty error")
+
+// GenerateShortURL генерирует short url, stringLength - длина строки на выходе, baseURL - базовый URL
+func GenerateShortURL(stringLength int, baseURL string) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	buf := make([]byte, config.Cfg.ShortStringLength)
+	buf := make([]byte, stringLength)
 	for i := range buf {
 		buf[i] = charset[random.Intn(len(charset))]
 	}
-	return config.Cfg.BaseURL + "/" + string(buf)
+	return baseURL + "/" + string(buf)
 }
 
+// ValidateURL валидация URL, inputURL - входящий URL
 func ValidateURL(inputURL string) error {
 	if inputURL == "" {
-		return errors.New("входящее значение пустое")
+		return ErrURLEmpty
 	}
 
 	_, err := url.ParseRequestURI(inputURL)
 	if err != nil {
-		return errors.New("неверный формат URL")
+		return ErrURLFormat
 	}
 	return nil
 }
