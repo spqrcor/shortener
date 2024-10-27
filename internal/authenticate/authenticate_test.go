@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	"net/http/httptest"
 	"reflect"
 	"shortener/internal/config"
 	"shortener/internal/logger"
@@ -31,6 +32,13 @@ func TestAuthenticate_GetUserIDFromCookie(t *testing.T) {
 	conf := config.NewConfig()
 	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
 
+	a := &Authenticate{
+		logger:    loggerRes,
+		secretKey: conf.SecretKey,
+		tokenExp:  conf.TokenExp,
+	}
+	token, _ := a.createToken(uuid.New())
+
 	tests := []struct {
 		name   string
 		token  string
@@ -41,14 +49,14 @@ func TestAuthenticate_GetUserIDFromCookie(t *testing.T) {
 			"_____",
 			false,
 		},
+		{
+			"Success",
+			token,
+			true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &Authenticate{
-				logger:    loggerRes,
-				secretKey: conf.SecretKey,
-				tokenExp:  conf.TokenExp,
-			}
 			_, err := a.GetUserIDFromCookie(tt.token)
 			assert.Equal(t, err == nil, tt.result)
 		})
@@ -102,6 +110,36 @@ func TestAuthenticate_createToken(t *testing.T) {
 
 	tests := []struct {
 		name string
+		key  string
+	}{
+		{
+			"success",
+			conf.SecretKey,
+		},
+		{
+			"false",
+			"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Authenticate{
+				logger:    loggerRes,
+				secretKey: conf.SecretKey,
+				tokenExp:  conf.TokenExp,
+			}
+			_, err := a.createToken(uuid.New())
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestAuthenticate_SetCookie(t *testing.T) {
+	conf := config.NewConfig()
+	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
+
+	tests := []struct {
+		name string
 	}{
 		{
 			"success",
@@ -114,7 +152,7 @@ func TestAuthenticate_createToken(t *testing.T) {
 				secretKey: conf.SecretKey,
 				tokenExp:  conf.TokenExp,
 			}
-			_, err := a.createToken(uuid.New())
+			err := a.SetCookie(httptest.NewRecorder(), uuid.New())
 			assert.Nil(t, err)
 		})
 	}

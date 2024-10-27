@@ -26,7 +26,7 @@ var ContextUserID ContextKey = "UserID"
 // Auth интерфейс аутентификации
 type Auth interface {
 	GetUserIDFromCookie(tokenString string) (uuid.UUID, error)
-	SetCookie(rw http.ResponseWriter, UserID uuid.UUID)
+	SetCookie(rw http.ResponseWriter, UserID uuid.UUID) error
 }
 
 // Authenticate аутентификация
@@ -109,11 +109,11 @@ func (a *Authenticate) GetUserIDFromCookie(tokenString string) (uuid.UUID, error
 }
 
 // SetCookie установка cookie, rw - http.ResponseWriter, UserID - guid пользователя
-func (a *Authenticate) SetCookie(rw http.ResponseWriter, UserID uuid.UUID) {
+func (a *Authenticate) SetCookie(rw http.ResponseWriter, UserID uuid.UUID) error {
 	cookie, err := a.createCookie(UserID)
 	if err != nil {
-		a.logger.Error(err.Error())
-	} else {
-		http.SetCookie(rw, &cookie)
+		return err
 	}
+	http.SetCookie(rw, &cookie)
+	return nil
 }

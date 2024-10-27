@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"shortener/internal/config"
@@ -140,6 +141,50 @@ func TestMemoryStorage_Find(t *testing.T) {
 				config: config.Config{BaseURL: "http://localhost:8080"},
 			}
 			_, err := m.Find(context.Background(), tt.inputURI)
+			assert.Equal(t, tt.want, err == nil)
+		})
+	}
+}
+
+func TestMemoryStorage_FindByUser(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{
+			"Success",
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := MemoryStorage{
+				Store:  map[string]string{"http://localhost:8080/fakeurl": "http://ya.ru"},
+				config: config.Config{BaseURL: "http://localhost:8080"},
+			}
+			_, err := m.FindByUser(context.Background())
+			assert.Equal(t, tt.want, err == nil)
+		})
+	}
+}
+
+func TestMemoryStorage_Remove(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{
+			"Success",
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := MemoryStorage{
+				Store:  map[string]string{"http://localhost:8080/fakeurl": "http://ya.ru"},
+				config: config.Config{BaseURL: "http://localhost:8080"},
+			}
+			err := m.Remove(context.Background(), uuid.New(), []string{"xxx"})
 			assert.Equal(t, tt.want, err == nil)
 		})
 	}
