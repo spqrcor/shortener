@@ -31,9 +31,7 @@ func Test_getBodyMiddleware(t *testing.T) {
 		r := httptest.NewRequest("POST", srv.URL+"/", nil)
 		r.RequestURI = ""
 		r.Header.Set("Content-Type", "text/html")
-		resp, err := http.DefaultClient.Do(r)
-		if err != nil {
-		}
+		resp, _ := http.DefaultClient.Do(r)
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		defer func() {
 			err := resp.Body.Close()
@@ -53,9 +51,7 @@ func Test_getBodyMiddleware(t *testing.T) {
 		r.RequestURI = ""
 		r.Header.Set("Content-Encoding", "gzip")
 		r.Header.Set("Content-Type", "text/html")
-		resp, err := http.DefaultClient.Do(r)
-		if err != nil {
-		}
+		resp, _ := http.DefaultClient.Do(r)
 		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 		defer func() {
 			err := resp.Body.Close()
