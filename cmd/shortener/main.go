@@ -1,6 +1,8 @@
+// go run -ldflags "-X main.buildVersion=v1.0.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X main.buildCommit=hello world" main.go
 package main
 
 import (
+	"fmt"
 	"log"
 	"shortener/internal/authenticate"
 	"shortener/internal/config"
@@ -10,7 +12,14 @@ import (
 	"shortener/internal/storage"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 func main() {
+	fmt.Printf("Build version:%s\nBuild date:%s\nBuild commit:%s\n", buildVersion, buildDate, buildCommit)
 	conf := config.NewConfig()
 	loggerRes, err := logger.NewLogger(conf.LogLevel)
 	if err != nil {
