@@ -2,20 +2,66 @@ package storage
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	"os"
 	"reflect"
 	"shortener/internal/config"
 	"shortener/internal/logger"
 	"testing"
 )
 
+func TestFileStorage_FindByUser(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{
+			"Success",
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := FileStorage{
+				Store:  map[string]string{"http://localhost:8080/fakeurl": "http://ya.ru"},
+				config: config.Config{BaseURL: "http://localhost:8080"},
+			}
+			_, err := m.FindByUser(context.Background())
+			assert.Equal(t, tt.want, err == nil)
+		})
+	}
+}
+
+func TestFileStorage_Remove(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{
+			"Success",
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := FileStorage{
+				Store:  map[string]string{"http://localhost:8080/fakeurl": "http://ya.ru"},
+				config: config.Config{BaseURL: "http://localhost:8080"},
+			}
+			err := m.Remove(context.Background(), uuid.New(), []string{"xxx"})
+			assert.Equal(t, tt.want, err == nil)
+		})
+	}
+}
+
 func TestCreateFileStorage(t *testing.T) {
 	conf := config.NewConfig()
 	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
 
 	if conf.FileStoragePath == "" {
-		t.Skip("Skipping testing...")
+		conf.FileStoragePath = os.TempDir() + "/fake_short.txt"
 	}
 	store := CreateFileStorage(conf, loggerRes)
 	assert.Equal(t, reflect.TypeOf(store).String() == "storage.FileStorage", true)
@@ -23,6 +69,8 @@ func TestCreateFileStorage(t *testing.T) {
 
 func TestFileStorage_Add(t *testing.T) {
 	conf := config.NewConfig()
+	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
+
 	tests := []struct {
 		name     string
 		inputURL string
@@ -40,13 +88,11 @@ func TestFileStorage_Add(t *testing.T) {
 		},
 	}
 	if conf.FileStoragePath == "" {
-		t.Skip("Skipping testing...")
+		conf.FileStoragePath = os.TempDir() + "/fake_short.txt"
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := FileStorage{
-				Store: map[string]string{},
-			}
+			m := CreateFileStorage(conf, loggerRes)
 			_, err := m.Add(context.Background(), tt.inputURL)
 			assert.Equal(t, tt.want, err == nil)
 		})
@@ -55,6 +101,7 @@ func TestFileStorage_Add(t *testing.T) {
 
 func TestFileStorage_BatchAdd(t *testing.T) {
 	conf := config.NewConfig()
+	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
 	tests := []struct {
 		name        string
 		inputParams []BatchInputParams
@@ -82,13 +129,11 @@ func TestFileStorage_BatchAdd(t *testing.T) {
 		},
 	}
 	if conf.FileStoragePath == "" {
-		t.Skip("Skipping testing...")
+		conf.FileStoragePath = os.TempDir() + "/fake_short.txt"
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := FileStorage{
-				Store: map[string]string{},
-			}
+			m := CreateFileStorage(conf, loggerRes)
 			_, err := m.BatchAdd(context.Background(), tt.inputParams)
 			assert.Equal(t, tt.want, err == nil)
 		})
@@ -122,4 +167,16 @@ func TestFileStorage_Find(t *testing.T) {
 			assert.Equal(t, tt.want, err == nil)
 		})
 	}
+}
+
+func TestFileStorage_CreateFileStorage(t *testing.T) {
+	conf := config.NewConfig()
+	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
+
+	if conf.FileStoragePath == "" {
+		conf.FileStoragePath = os.TempDir() + "/fake_short.txt"
+	}
+
+	store := CreateFileStorage(conf, loggerRes)
+	assert.Equal(t, reflect.TypeOf(store).String() == "storage.FileStorage", true)
 }

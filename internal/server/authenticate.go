@@ -19,7 +19,9 @@ func authenticateMiddleware(logger *zap.Logger, auth authenticate.Auth) func(nex
 					http.Error(rw, err.Error(), http.StatusUnauthorized)
 					return
 				} else {
-					auth.SetCookie(rw, UserID)
+					if err = auth.SetCookie(rw, UserID); err != nil {
+						logger.Error(err.Error())
+					}
 				}
 			} else {
 				decodeUserID, err := auth.GetUserIDFromCookie(cookie.Value)
