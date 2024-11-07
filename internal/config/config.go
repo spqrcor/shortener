@@ -6,6 +6,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 )
@@ -21,6 +23,7 @@ type Config struct {
 	QueryTimeOut      time.Duration `env:"QUERY_TIME_OUT"`
 	SecretKey         string        `env:"SECRET_KEY"`
 	TokenExp          time.Duration `env:"TOKEN_EXPIRATION"`
+	EnableTLS         bool          `env:"ENABLE_TLS"`
 }
 
 // cfg переменная конфига
@@ -34,9 +37,11 @@ var cfg = Config{
 	QueryTimeOut:      3,
 	SecretKey:         "KLJ-fo3Fksd3fl!=",
 	TokenExp:          time.Hour * 3,
+	EnableTLS:         false,
 }
 
 var once sync.Once
+var boolVariants = []string{"t", "true", "1"}
 
 // NewConfig получение конфига
 func NewConfig() Config {
@@ -45,12 +50,14 @@ func NewConfig() Config {
 		flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "base url")
 		flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file storage path")
 		flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "database dsn")
+		flag.BoolVar(&cfg.EnableTLS, "s", cfg.EnableTLS, "enable tls")
 		flag.Parse()
 
 		serverAddressEnv, findAddress := os.LookupEnv("SERVER_ADDRESS")
 		serverBaseURLEnv, findBaseURL := os.LookupEnv("BASE_URL")
 		serverStoragePath, findStoragePath := os.LookupEnv("FILE_STORAGE_PATH")
 		serverDatabaseDSN, findDatabaseDSN := os.LookupEnv("DATABASE_DSN")
+		serverEnableTLS, findEnableTLS := os.LookupEnv("ENABLE_TLS")
 
 		if findAddress {
 			cfg.Addr = serverAddressEnv
@@ -63,6 +70,9 @@ func NewConfig() Config {
 		}
 		if findDatabaseDSN {
 			cfg.DatabaseDSN = serverDatabaseDSN
+		}
+		if findEnableTLS && slices.IndexFunc(boolVariants, func(c string) bool { return c == strings.ToLower(serverEnableTLS) }) > -1 {
+			cfg.EnableTLS = true
 		}
 	})
 	return cfg
