@@ -86,5 +86,17 @@ func (s *HTTPServer) Start() error {
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 	})
-	return http.ListenAndServe(s.config.Addr, r)
+
+	server := &http.Server{
+		Handler: r,
+		Addr:    s.config.Addr,
+	}
+
+	if s.config.EnableTLS {
+		if err := initCertificate(); err != nil {
+			return err
+		}
+		return server.ListenAndServeTLS(certCfg.certPath, certCfg.keyPath)
+	}
+	return server.ListenAndServe()
 }
