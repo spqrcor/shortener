@@ -50,7 +50,7 @@ var boolVariants = []string{"t", "true", "1"}
 // NewConfig получение конфига
 func NewConfig() Config {
 	once.Do(func() {
-		configFromJSON()
+		//configFromJSON()
 		flag.StringVar(&cfg.Addr, "a", cfg.Addr, "address and port to run server")
 		flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "base url")
 		flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file storage path")
