@@ -51,7 +51,34 @@ var boolVariants = []string{"t", "true", "1"}
 // NewConfig получение конфига
 func NewConfig() Config {
 	once.Do(func() {
-		//configFromJSON()
+		var c, c1 string
+		flag.StringVar(&c, "c", "", "config path")
+		flag.StringVar(&c1, "config", "", "config path")
+		flag.Parse()
+		if c != "" {
+			cfg.ConfigPath = c
+		}
+		if c1 != "" {
+			cfg.ConfigPath = c1
+		}
+		serverConfig, findConfig := os.LookupEnv("CONFIG")
+		if findConfig {
+			cfg.ConfigPath = serverConfig
+		}
+		if cfg.ConfigPath != "" {
+			raw, err := os.ReadFile(cfg.ConfigPath)
+			if err != nil {
+				log.Fatal("Error read config file")
+				return
+			}
+			var cf Config
+			if err = json.Unmarshal(raw, &cf); err != nil {
+				log.Fatal("Error parse config file")
+				return
+			}
+			err = nil
+		}
+
 		flag.StringVar(&cfg.Addr, "a", cfg.Addr, "address and port to run server")
 		flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "base url")
 		flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file storage path")
