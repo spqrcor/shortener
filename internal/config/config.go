@@ -4,7 +4,6 @@ package config
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"log"
@@ -52,9 +51,17 @@ var boolVariants = []string{"t", "true", "1"}
 func NewConfig() Config {
 	once.Do(func() {
 		var c, c1 string
+		tempCfg := Config{}
+
 		flag.StringVar(&c, "c", "", "config path")
 		flag.StringVar(&c1, "config", "", "config path")
+		flag.StringVar(&tempCfg.Addr, "a", "", "address and port to run server")
+		flag.StringVar(&tempCfg.BaseURL, "b", "", "base url")
+		flag.StringVar(&tempCfg.FileStoragePath, "f", "", "file storage path")
+		flag.StringVar(&tempCfg.DatabaseDSN, "d", "", "database dsn")
+		flag.BoolVar(&tempCfg.EnableTLS, "s", false, "enable tls")
 		flag.Parse()
+
 		if c != "" {
 			cfg.ConfigPath = c
 		}
@@ -79,12 +86,21 @@ func NewConfig() Config {
 			err = nil
 		}
 
-		flag.StringVar(&cfg.Addr, "a", cfg.Addr, "address and port to run server")
-		flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "base url")
-		flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file storage path")
-		flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "database dsn")
-		flag.BoolVar(&cfg.EnableTLS, "s", cfg.EnableTLS, "enable tls")
-		flag.Parse()
+		if tempCfg.Addr != "" {
+			cfg.Addr = tempCfg.Addr
+		}
+		if tempCfg.BaseURL != "" {
+			cfg.BaseURL = tempCfg.BaseURL
+		}
+		if tempCfg.FileStoragePath != "" {
+			cfg.FileStoragePath = tempCfg.FileStoragePath
+		}
+		if tempCfg.DatabaseDSN != "" {
+			cfg.DatabaseDSN = tempCfg.DatabaseDSN
+		}
+		if tempCfg.EnableTLS {
+			cfg.EnableTLS = tempCfg.EnableTLS
+		}
 
 		serverAddressEnv, findAddress := os.LookupEnv("SERVER_ADDRESS")
 		serverBaseURLEnv, findBaseURL := os.LookupEnv("BASE_URL")
@@ -107,37 +123,6 @@ func NewConfig() Config {
 		if findEnableTLS && slices.IndexFunc(boolVariants, func(c string) bool { return c == strings.ToLower(serverEnableTLS) }) > -1 {
 			cfg.EnableTLS = true
 		}
-		fmt.Print("Config:", cfg)
 	})
 	return cfg
-}
-
-func configFromJSON() {
-	var c, c1 string
-	flag.StringVar(&c, "c", "", "config path")
-	flag.StringVar(&c1, "config", "", "config path")
-	flag.Parse()
-	if c != "" {
-		cfg.ConfigPath = c
-	}
-	if c1 != "" {
-		cfg.ConfigPath = c1
-	}
-	serverConfig, findConfig := os.LookupEnv("CONFIG")
-	if findConfig {
-		cfg.ConfigPath = serverConfig
-	}
-	if cfg.ConfigPath != "" {
-		raw, err := os.ReadFile(cfg.ConfigPath)
-		if err != nil {
-			log.Fatal("Error read config file")
-			return
-		}
-		var cf Config
-		if err = json.Unmarshal(raw, &cf); err != nil {
-			log.Fatal("Error parse config file")
-			return
-		}
-		err = nil
-	}
 }
