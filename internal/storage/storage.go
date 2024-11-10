@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"shortener/internal/config"
+	"shortener/internal/db"
 )
 
 // Storage интерфейс хранилища
@@ -38,7 +39,14 @@ type FindByUserOutputParams struct {
 // NewStorage создание хранилища, config конфиг, logger - логгер
 func NewStorage(config config.Config, logger *zap.Logger) Storage {
 	if config.DatabaseDSN != "" {
-		return CreateDBStorage(config, logger)
+		res, err := db.Connect(config.DatabaseDSN)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		if err := db.Migrate(res); err != nil {
+			logger.Fatal(err.Error())
+		}
+		return CreateDBStorage(config, logger, res)
 	} else if config.FileStoragePath != "" {
 		return CreateFileStorage(config, logger)
 	} else {

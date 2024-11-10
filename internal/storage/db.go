@@ -9,7 +9,6 @@ import (
 	"shortener/internal/app"
 	"shortener/internal/authenticate"
 	"shortener/internal/config"
-	"shortener/internal/db"
 	"strconv"
 	"strings"
 	"time"
@@ -43,15 +42,7 @@ var ErrShortIsRemoved = fmt.Errorf("short is removed")
 var ErrKeyNotFound = fmt.Errorf("key not found")
 
 // CreateDBStorage создание db хранилища, config - конфиг, logger - логгер
-func CreateDBStorage(config config.Config, logger *zap.Logger) Storage {
-	res, err := db.Connect(config.DatabaseDSN)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	if err := db.Migrate(res); err != nil {
-		logger.Fatal(err.Error())
-	}
-
+func CreateDBStorage(config config.Config, logger *zap.Logger, res *sql.DB) Storage {
 	return DBStorage{
 		config: config,
 		logger: logger,
