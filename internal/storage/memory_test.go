@@ -203,3 +203,23 @@ func BenchmarkMemoryStorage_Find(b *testing.B) {
 		}
 	})
 }
+
+func TestMemoryStorage_ShutDown(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{
+			"Success",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := MemoryStorage{
+				Store:  map[string]string{"http://localhost:8080/fakeurl": "http://ya.ru"},
+				config: config.Config{BaseURL: "http://localhost:8080"},
+			}
+			err := m.ShutDown()
+			assert.Nil(t, err)
+		})
+	}
+}

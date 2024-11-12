@@ -34,7 +34,6 @@ func TestDBStorage_Add(t *testing.T) {
 	ctx := context.WithValue(context.Background(), authenticate.ContextUserID, userID)
 	mock.ExpectExec(addQuery).WithArgs("http://localhost/xxxxxx", "https://ya.ru", userID)
 
-	// now we execute our method
 	_, _ = d.Add(ctx, "https://ya.ru")
 }
 
@@ -57,7 +56,6 @@ func TestDBStorage_Find(t *testing.T) {
 	ctx := context.WithValue(context.Background(), authenticate.ContextUserID, userID)
 	mock.ExpectExec(findByShortQuery).WithArgs("xxxxxx")
 
-	// now we execute our method
 	_, _ = d.Find(ctx, "https://ya.ru")
 }
 
@@ -80,7 +78,6 @@ func TestDBStorage_FindByUser(t *testing.T) {
 	ctx := context.WithValue(context.Background(), authenticate.ContextUserID, userID)
 	mock.ExpectExec(findByUserQuery).WithArgs(userID)
 
-	// now we execute our method
 	_, _ = d.FindByUser(ctx)
 }
 
@@ -104,7 +101,6 @@ func TestDBStorage_Remove(t *testing.T) {
 	ctx := context.WithValue(context.Background(), authenticate.ContextUserID, userID)
 	mock.ExpectExec(removeQuery).WithArgs(userID, d.getFormatShorts(shorts))
 
-	// now we execute our method
 	_ = d.Remove(ctx, userID, shorts)
 }
 
