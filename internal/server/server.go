@@ -2,15 +2,19 @@
 package server
 
 import (
+	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 	"net/http"
+	"os"
+	"os/signal"
 	"shortener/internal/authenticate"
 	"shortener/internal/config"
 	"shortener/internal/handlers"
 	"shortener/internal/services"
 	"shortener/internal/storage"
+	"syscall"
 )
 
 // HTTPServer тип http server
@@ -67,7 +71,7 @@ func WithBatchRemove(batchRemove services.BatchRemover) func(*HTTPServer) {
 }
 
 // Start старт сервера
-func (s *HTTPServer) Start() error {
+func (s *HTTPServer) Start() {
 	r := chi.NewRouter()
 	r.Use(loggerMiddleware(s.logger))
 	r.Use(middleware.Compress(5, "application/json", "text/html"))
@@ -92,11 +96,34 @@ func (s *HTTPServer) Start() error {
 		Addr:    s.config.Addr,
 	}
 
+	idleConesClosed := make(chan struct{})
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	go func() {
+		<-stop
+		if err := server.Shutdown(context.Background()); err != nil {
+			s.logger.Error(err.Error())
+		}
+		if err := s.storage.ShutDown(); err != nil {
+			s.logger.Error(err.Error())
+		}
+		close(idleConesClosed)
+	}()
+
 	if s.config.EnableTLS {
 		if err := initCertificate(); err != nil {
-			return err
+			s.logger.Error(err.Error())
 		}
-		return server.ListenAndServeTLS(certCfg.certPath, certCfg.keyPath)
+		if err := server.ListenAndServeTLS(certCfg.certPath, certCfg.keyPath); err != nil {
+			s.logger.Error(err.Error())
+		}
+	} else {
+		if err := server.ListenAndServe(); err != nil {
+			s.logger.Error(err.Error())
+		}
 	}
-	return server.ListenAndServe()
+
+	<-idleConesClosed
+	s.logger.Info("graceful shutdown")
 }

@@ -191,3 +191,8 @@ func (d DBStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string
 	}
 	return nil
 }
+
+// ShutDown завершение работы с хранилищем
+func (d DBStorage) ShutDown() error {
+	return d.DB.Close()
+}

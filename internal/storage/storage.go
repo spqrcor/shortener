@@ -16,6 +16,7 @@ type Storage interface {
 	BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error)
 	FindByUser(ctx context.Context) ([]FindByUserOutputParams, error)
 	Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error
+	ShutDown() error
 }
 
 // BatchInputParams тип для входящих данных роута /api/shorten/batch

@@ -104,3 +104,8 @@ func (f FileStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams, 
 func (f FileStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
 	return nil
 }
+
+// ShutDown завершение работы с хранилищем
+func (f FileStorage) ShutDown() error {
+	return nil
+}
