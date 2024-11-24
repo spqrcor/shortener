@@ -67,3 +67,8 @@ func (m MemoryStorage) FindByUser(ctx context.Context) ([]FindByUserOutputParams
 func (m MemoryStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error {
 	return nil
 }
+
+// ShutDown завершение работы с хранилищем
+func (m MemoryStorage) ShutDown() error {
+	return nil
+}

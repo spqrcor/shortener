@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"shortener/internal/config"
+	"shortener/internal/db"
 )
 
 // Storage интерфейс хранилища
@@ -15,6 +16,7 @@ type Storage interface {
 	BatchAdd(ctx context.Context, inputURLs []BatchInputParams) ([]BatchOutputParams, error)
 	FindByUser(ctx context.Context) ([]FindByUserOutputParams, error)
 	Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error
+	ShutDown() error
 }
 
 // BatchInputParams тип для входящих данных роута /api/shorten/batch
@@ -38,7 +40,14 @@ type FindByUserOutputParams struct {
 // NewStorage создание хранилища, config конфиг, logger - логгер
 func NewStorage(config config.Config, logger *zap.Logger) Storage {
 	if config.DatabaseDSN != "" {
-		return CreateDBStorage(config, logger)
+		res, err := db.Connect(config.DatabaseDSN)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		if err := db.Migrate(res); err != nil {
+			logger.Fatal(err.Error())
+		}
+		return CreateDBStorage(config, logger, res)
 	} else if config.FileStoragePath != "" {
 		return CreateFileStorage(config, logger)
 	} else {

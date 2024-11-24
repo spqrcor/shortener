@@ -68,15 +68,15 @@ func WithTokenExp(tokenExp time.Duration) func(*Authenticate) {
 
 // createCookie создание cookie, UserID - guid пользователя
 func (a *Authenticate) createCookie(UserID uuid.UUID) (http.Cookie, error) {
-	token, err := a.createToken(UserID)
+	token, err := a.CreateToken(UserID)
 	if err != nil {
 		return http.Cookie{}, err
 	}
 	return http.Cookie{Name: "Authorization", Value: token, Expires: time.Now().Add(a.tokenExp), HttpOnly: true, Path: "/"}, nil
 }
 
-// createToken создание токена, UserID - guid пользователя
-func (a *Authenticate) createToken(UserID uuid.UUID) (string, error) {
+// CreateToken создание токена, UserID - guid пользователя
+func (a *Authenticate) CreateToken(UserID uuid.UUID) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(a.tokenExp)),

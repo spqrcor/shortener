@@ -109,3 +109,17 @@ func (mr *MockStorageMockRecorder) Remove(ctx, UserID, shorts interface{}) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockStorage)(nil).Remove), ctx, UserID, shorts)
 }
+
+// ShutDown mocks base method.
+func (m *MockStorage) ShutDown() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ShutDown")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ShutDown indicates an expected call of ShutDown.
+func (mr *MockStorageMockRecorder) ShutDown() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutDown", reflect.TypeOf((*MockStorage)(nil).ShutDown))
+}

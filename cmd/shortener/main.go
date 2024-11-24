@@ -41,8 +41,5 @@ func main() {
 		server.WithAuthenticate(authService),
 		server.WithBatchRemove(batchRemoveService),
 	)
-
-	if err := appServer.Start(); err != nil {
-		loggerRes.Error(err.Error())
-	}
+	appServer.Start()
 }
