@@ -123,3 +123,18 @@ func (mr *MockStorageMockRecorder) ShutDown() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutDown", reflect.TypeOf((*MockStorage)(nil).ShutDown))
 }
+
+// Stat mocks base method.
+func (m *MockStorage) Stat(ctx context.Context) (storage.Stat, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Stat", ctx)
+	ret0, _ := ret[0].(storage.Stat)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Stat indicates an expected call of Stat.
+func (mr *MockStorageMockRecorder) Stat(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stat", reflect.TypeOf((*MockStorage)(nil).Stat), ctx)
+}

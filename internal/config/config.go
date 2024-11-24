@@ -27,6 +27,7 @@ type Config struct {
 	TokenExp          time.Duration `env:"TOKEN_EXPIRATION"`
 	EnableTLS         bool          `env:"ENABLE_TLS" json:"enable_tls,omitempty"`
 	ConfigPath        string        `env:"CONFIG"`
+	TrustedSubnet     string        `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
 }
 
 // cfg переменная конфига
@@ -42,6 +43,7 @@ var cfg = Config{
 	TokenExp:          time.Hour * 3,
 	EnableTLS:         false,
 	ConfigPath:        "",
+	TrustedSubnet:     "",
 }
 
 var once sync.Once
@@ -59,6 +61,7 @@ func NewConfig() Config {
 		flag.StringVar(&tempCfg.BaseURL, "b", "", "base url")
 		flag.StringVar(&tempCfg.FileStoragePath, "f", "", "file storage path")
 		flag.StringVar(&tempCfg.DatabaseDSN, "d", "", "database dsn")
+		flag.StringVar(&tempCfg.TrustedSubnet, "t", "", "trusted subnet")
 		flag.BoolVar(&tempCfg.EnableTLS, "s", false, "enable tls")
 		flag.Parse()
 
@@ -101,12 +104,16 @@ func NewConfig() Config {
 		if tempCfg.EnableTLS {
 			cfg.EnableTLS = tempCfg.EnableTLS
 		}
+		if tempCfg.TrustedSubnet != "" {
+			cfg.TrustedSubnet = tempCfg.TrustedSubnet
+		}
 
 		serverAddressEnv, findAddress := os.LookupEnv("SERVER_ADDRESS")
 		serverBaseURLEnv, findBaseURL := os.LookupEnv("BASE_URL")
 		serverStoragePath, findStoragePath := os.LookupEnv("FILE_STORAGE_PATH")
 		serverDatabaseDSN, findDatabaseDSN := os.LookupEnv("DATABASE_DSN")
 		serverEnableTLS, findEnableTLS := os.LookupEnv("ENABLE_TLS")
+		serverTrustedSubnet, findTrustedSubnet := os.LookupEnv("TRUSTED_SUBNET")
 
 		if findAddress {
 			cfg.Addr = serverAddressEnv
@@ -119,6 +126,9 @@ func NewConfig() Config {
 		}
 		if findDatabaseDSN {
 			cfg.DatabaseDSN = serverDatabaseDSN
+		}
+		if findTrustedSubnet {
+			cfg.TrustedSubnet = serverTrustedSubnet
 		}
 		if findEnableTLS && slices.IndexFunc(boolVariants, func(c string) bool { return c == strings.ToLower(serverEnableTLS) }) > -1 {
 			cfg.EnableTLS = true

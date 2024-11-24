@@ -76,7 +76,7 @@ func (s *HTTPServer) Start() {
 	r.Use(loggerMiddleware(s.logger))
 	r.Use(middleware.Compress(5, "application/json", "text/html"))
 	r.Use(getBodyMiddleware(s.logger))
-	r.Use(authenticateMiddleware(s.logger, s.auth))
+	r.Use(authenticateMiddleware(s.logger, s.auth, s.config.TrustedSubnet))
 	r.Mount("/debug", middleware.Profiler())
 
 	r.Post("/", handlers.CreateShortHandler(s.storage))
@@ -85,6 +85,7 @@ func (s *HTTPServer) Start() {
 	r.Get("/{id}", handlers.SearchShortHandler(s.storage))
 	r.Get("/ping", handlers.PingHandler())
 	r.Get("/api/user/urls", handlers.SearchByUserHandler(s.storage))
+	r.Get("/api/internal/stats", handlers.InternalStatHandler(s.storage))
 	r.Delete("/api/user/urls", handlers.RemoveShortHandler(s.batchRemove))
 
 	r.HandleFunc(`/*`, func(res http.ResponseWriter, req *http.Request) {

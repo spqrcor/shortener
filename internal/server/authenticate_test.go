@@ -26,7 +26,7 @@ func Test_authenticateMiddleware(t *testing.T) {
 		authenticate.WithTokenExp(conf.TokenExp),
 	)
 	r := chi.NewRouter()
-	r.Use(authenticateMiddleware(loggerRes, authService))
+	r.Use(authenticateMiddleware(loggerRes, authService, ""))
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv := httptest.NewServer(r)
 	defer srv.Close()
@@ -43,7 +43,7 @@ func Test_authenticateMiddleware(t *testing.T) {
 	})
 
 	r = chi.NewRouter()
-	r.Use(authenticateMiddleware(loggerRes, authService))
+	r.Use(authenticateMiddleware(loggerRes, authService, ""))
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv = httptest.NewServer(r)
 	defer srv.Close()
@@ -62,7 +62,7 @@ func Test_authenticateMiddleware(t *testing.T) {
 	})
 
 	r = chi.NewRouter()
-	r.Use(authenticateMiddleware(loggerRes, authService))
+	r.Use(authenticateMiddleware(loggerRes, authService, ""))
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv = httptest.NewServer(r)
 	defer srv.Close()
@@ -81,7 +81,7 @@ func Test_authenticateMiddleware(t *testing.T) {
 	token, _ := authService.CreateToken(uuid.New())
 
 	r = chi.NewRouter()
-	r.Use(authenticateMiddleware(loggerRes, authService))
+	r.Use(authenticateMiddleware(loggerRes, authService, ""))
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv = httptest.NewServer(r)
 	defer srv.Close()

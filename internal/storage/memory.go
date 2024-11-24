@@ -72,3 +72,8 @@ func (m MemoryStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []st
 func (m MemoryStorage) ShutDown() error {
 	return nil
 }
+
+// Stat выдача статистки
+func (m MemoryStorage) Stat(ctx context.Context) (Stat, error) {
+	return Stat{Urls: len(m.Store), Users: 0}, nil
+}

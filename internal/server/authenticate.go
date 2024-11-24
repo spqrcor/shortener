@@ -4,14 +4,24 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"net"
 	"net/http"
 	"shortener/internal/authenticate"
 )
 
-// authenticateMiddleware middleware для аутентификации, logger - логгер, auth - сервис аутентификации
-func authenticateMiddleware(logger *zap.Logger, auth authenticate.Auth) func(next http.Handler) http.Handler {
+// authenticateMiddleware middleware для аутентификации, logger - логгер, auth - сервис аутентификации, trustedSubnet - доверенная подсеть
+func authenticateMiddleware(logger *zap.Logger, auth authenticate.Auth, trustedSubnet string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			if r.RequestURI == "/api/internal/stats" && trustedSubnet != "" {
+				_, ipnet, _ := net.ParseCIDR(trustedSubnet)
+				ipB := net.ParseIP(r.Header.Get(`X-Real-IP`))
+				if !ipnet.Contains(ipB) {
+					http.Error(rw, "403", http.StatusForbidden)
+					return
+				}
+			}
+
 			UserID := uuid.New()
 			cookie, err := r.Cookie("Authorization")
 			if err != nil {

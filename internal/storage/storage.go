@@ -17,6 +17,13 @@ type Storage interface {
 	FindByUser(ctx context.Context) ([]FindByUserOutputParams, error)
 	Remove(ctx context.Context, UserID uuid.UUID, shorts []string) error
 	ShutDown() error
+	Stat(ctx context.Context) (Stat, error)
+}
+
+// Stat тип возвращаемый методом InternalStatHandler
+type Stat struct {
+	Urls  int `json:"urls"`
+	Users int `json:"users"`
 }
 
 // BatchInputParams тип для входящих данных роута /api/shorten/batch
