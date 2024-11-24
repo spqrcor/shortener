@@ -37,7 +37,7 @@ func TestAuthenticate_GetUserIDFromCookie(t *testing.T) {
 		secretKey: conf.SecretKey,
 		tokenExp:  conf.TokenExp,
 	}
-	token, _ := a.createToken(uuid.New())
+	token, _ := a.CreateToken(uuid.New())
 
 	tests := []struct {
 		name   string
@@ -128,7 +128,7 @@ func TestAuthenticate_createToken(t *testing.T) {
 				secretKey: conf.SecretKey,
 				tokenExp:  conf.TokenExp,
 			}
-			_, err := a.createToken(uuid.New())
+			_, err := a.CreateToken(uuid.New())
 			assert.Nil(t, err)
 		})
 	}
@@ -170,7 +170,7 @@ func BenchmarkAuthenticate_createToken(b *testing.B) {
 		userID := uuid.New()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			_, _ = a.createToken(userID)
+			_, _ = a.CreateToken(userID)
 		}
 	})
 }

@@ -96,7 +96,6 @@ func (s *HTTPServer) Start() {
 		Addr:    s.config.Addr,
 	}
 
-	idleConesClosed := make(chan struct{})
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
@@ -108,7 +107,6 @@ func (s *HTTPServer) Start() {
 		if err := s.storage.ShutDown(); err != nil {
 			s.logger.Error(err.Error())
 		}
-		close(idleConesClosed)
 	}()
 
 	if s.config.EnableTLS {
@@ -124,6 +122,5 @@ func (s *HTTPServer) Start() {
 		}
 	}
 
-	<-idleConesClosed
 	s.logger.Info("graceful shutdown")
 }

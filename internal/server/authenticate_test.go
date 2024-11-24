@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"net/http"
@@ -77,6 +78,8 @@ func Test_authenticateMiddleware(t *testing.T) {
 		}()
 	})
 
+	token, _ := authService.CreateToken(uuid.New())
+
 	r = chi.NewRouter()
 	r.Use(authenticateMiddleware(loggerRes, authService))
 	r.Post(`/`, handlers.CreateShortHandler(store))
@@ -85,7 +88,7 @@ func Test_authenticateMiddleware(t *testing.T) {
 	t.Run("decode cookie", func(t *testing.T) {
 		r := httptest.NewRequest("POST", srv.URL+"/", nil)
 		r.RequestURI = ""
-		cookie := http.Cookie{Name: "Authorization", Value: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzE0MjgxNTQsIlVzZXJJRCI6Ijg5N2ZhOGQxLWUzMDctNDQyNy05N2I3LWMwZWQ5YjYwODAzOCJ9._GkUxf9EcamtSrsxSfY_q-pfQrT164bpC8F2SVktAGE", Expires: time.Now().Add(conf.TokenExp), HttpOnly: true, Path: "/"}
+		cookie := http.Cookie{Name: "Authorization", Value: token, Expires: time.Now().Add(conf.TokenExp), HttpOnly: true, Path: "/"}
 		r.AddCookie(&cookie)
 		r.Header.Set("Content-Type", "text/html")
 		resp, _ := http.DefaultClient.Do(r)
