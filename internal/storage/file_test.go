@@ -200,3 +200,25 @@ func TestFileStorage_ShutDown(t *testing.T) {
 		})
 	}
 }
+
+func TestFileStorage_Stat(t *testing.T) {
+	tests := []struct {
+		name      string
+		urlsCount int
+	}{
+		{
+			"success",
+			1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := FileStorage{
+				Store:  map[string]string{"http://localhost:8080/fakeurl": "http://ya.ru"},
+				config: config.Config{BaseURL: "http://localhost:8080"},
+			}
+			stat, _ := m.Stat(context.Background())
+			assert.Equal(t, tt.urlsCount, stat.Urls)
+		})
+	}
+}
