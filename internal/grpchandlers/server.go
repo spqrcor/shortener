@@ -1,5 +1,5 @@
-// Package grpcHandlers обработчики grpc запросов
-package grpcHandlers
+// Package grpchandlers обработчики grpc запросов
+package grpchandlers
 
 import (
 	"go.uber.org/zap"
