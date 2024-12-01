@@ -17,6 +17,7 @@ import (
 // Config тип для хранение конфига
 type Config struct {
 	Addr              string        `env:"SERVER_ADDRESS" json:"server_address"`
+	GRPCAddr          string        `env:"GRPC_SERVER_ADDRESS"`
 	BaseURL           string        `env:"BASE_URL" json:"base_url"`
 	ShortStringLength int           `env:"SHORT_STRING_LENGTH"`
 	LogLevel          zapcore.Level `env:"LOG_LEVEL"`
@@ -33,6 +34,7 @@ type Config struct {
 // cfg переменная конфига
 var cfg = Config{
 	Addr:              "localhost:8080",
+	GRPCAddr:          "localhost:8082",
 	BaseURL:           "http://localhost:8080",
 	ShortStringLength: 6,
 	LogLevel:          zap.InfoLevel,
@@ -58,6 +60,7 @@ func NewConfig() Config {
 		flag.StringVar(&c, "c", "", "config path")
 		flag.StringVar(&c1, "config", "", "config path")
 		flag.StringVar(&tempCfg.Addr, "a", "", "address and port to run server")
+		flag.StringVar(&tempCfg.GRPCAddr, "w", "", "grpc address and port to run server")
 		flag.StringVar(&tempCfg.BaseURL, "b", "", "base url")
 		flag.StringVar(&tempCfg.FileStoragePath, "f", "", "file storage path")
 		flag.StringVar(&tempCfg.DatabaseDSN, "d", "", "database dsn")
@@ -109,6 +112,7 @@ func NewConfig() Config {
 		}
 
 		serverAddressEnv, findAddress := os.LookupEnv("SERVER_ADDRESS")
+		serverGRPCAddressEnv, findGRPCAddress := os.LookupEnv("GRPC_SERVER_ADDRESS")
 		serverBaseURLEnv, findBaseURL := os.LookupEnv("BASE_URL")
 		serverStoragePath, findStoragePath := os.LookupEnv("FILE_STORAGE_PATH")
 		serverDatabaseDSN, findDatabaseDSN := os.LookupEnv("DATABASE_DSN")
@@ -117,6 +121,9 @@ func NewConfig() Config {
 
 		if findAddress {
 			cfg.Addr = serverAddressEnv
+		}
+		if findGRPCAddress {
+			cfg.GRPCAddr = serverGRPCAddressEnv
 		}
 		if findBaseURL {
 			cfg.BaseURL = serverBaseURLEnv
