@@ -13,7 +13,7 @@ import (
 	"os/signal"
 	"shortener/internal/authenticate"
 	"shortener/internal/config"
-	"shortener/internal/grpc_handlers"
+	"shortener/internal/grpcHandlers"
 	"shortener/internal/handlers"
 	"shortener/internal/server/proto"
 	"shortener/internal/services"
@@ -106,7 +106,7 @@ func (a *AppServer) NewHTTPServer() *http.Server {
 func (a *AppServer) Start() {
 	httpServer := a.NewHTTPServer()
 	grpcServer := grpc.NewServer()
-	proto.RegisterURLShortenerServiceServer(grpcServer, &grpc_handlers.ShortenerServer{
+	proto.RegisterURLShortenerServiceServer(grpcServer, &grpcHandlers.ShortenerServer{
 		Storage:     a.storage,
 		Logger:      a.logger,
 		BatchRemove: a.batchRemove,
