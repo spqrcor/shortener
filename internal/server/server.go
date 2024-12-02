@@ -15,6 +15,8 @@ import (
 	"shortener/internal/config"
 	"shortener/internal/grpchandlers"
 	"shortener/internal/handlers"
+	"shortener/internal/server/interceptors"
+	"shortener/internal/server/middlewares"
 	"shortener/internal/server/proto"
 	"shortener/internal/services"
 	"shortener/internal/storage"
@@ -77,10 +79,10 @@ func WithBatchRemove(batchRemove services.BatchRemover) func(*AppServer) {
 // NewHTTPServer создание http сервера
 func (a *AppServer) NewHTTPServer() *http.Server {
 	r := chi.NewRouter()
-	r.Use(loggerMiddleware(a.logger))
+	r.Use(middlewares.LoggerMiddleware(a.logger))
 	r.Use(middleware.Compress(5, "application/json", "text/html"))
-	r.Use(getBodyMiddleware(a.logger))
-	r.Use(authenticateMiddleware(a.logger, a.auth, a.config.TrustedSubnet))
+	r.Use(middlewares.GetBodyMiddleware(a.logger))
+	r.Use(middlewares.AuthenticateMiddleware(a.logger, a.auth, a.config.TrustedSubnet))
 	r.Mount("/debug", middleware.Profiler())
 
 	r.Post("/", handlers.CreateShortHandler(a.storage))
@@ -105,7 +107,12 @@ func (a *AppServer) NewHTTPServer() *http.Server {
 // Start запуск приложения
 func (a *AppServer) Start() {
 	httpServer := a.NewHTTPServer()
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			interceptors.AuthenticateInterceptor(a.logger, a.auth, a.config.TrustedSubnet),
+			interceptors.LoggerInterceptor(a.logger),
+		),
+	)
 	proto.RegisterURLShortenerServiceServer(grpcServer, &grpchandlers.ShortenerServer{
 		Storage:     a.storage,
 		Logger:      a.logger,

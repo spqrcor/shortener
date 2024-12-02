@@ -1,4 +1,4 @@
-package server
+package middlewares
 
 import (
 	"bytes"
@@ -21,7 +21,7 @@ func Test_getBodyMiddleware(t *testing.T) {
 	store := storage.CreateMemoryStorage(conf)
 
 	r := chi.NewRouter()
-	r.Use(getBodyMiddleware(loggerRes))
+	r.Use(GetBodyMiddleware(loggerRes))
 
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv := httptest.NewServer(r)

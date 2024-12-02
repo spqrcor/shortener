@@ -1,4 +1,4 @@
-package server
+package middlewares
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"shortener/internal/authenticate"
 )
 
-// authenticateMiddleware middleware для аутентификации, logger - логгер, auth - сервис аутентификации, trustedSubnet - доверенная подсеть
-func authenticateMiddleware(logger *zap.Logger, auth authenticate.Auth, trustedSubnet string) func(next http.Handler) http.Handler {
+// AuthenticateMiddleware middlewares для аутентификации, logger - логгер, auth - сервис аутентификации, trustedSubnet - доверенная подсеть
+func AuthenticateMiddleware(logger *zap.Logger, auth authenticate.Auth, trustedSubnet string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			if r.RequestURI == "/api/internal/stats" && trustedSubnet != "" {

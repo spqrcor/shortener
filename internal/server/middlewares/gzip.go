@@ -1,4 +1,4 @@
-package server
+package middlewares
 
 import (
 	"compress/gzip"
@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-// getBodyMiddleware middleware для работы с сжатием, logger - логгер
-func getBodyMiddleware(logger *zap.Logger) func(next http.Handler) http.Handler {
+// GetBodyMiddleware middlewares для работы с сжатием, logger - логгер
+func GetBodyMiddleware(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			if r.Header.Get(`Content-Encoding`) != `gzip` {
