@@ -11,6 +11,23 @@ import (
 	"shortener/internal/authenticate"
 )
 
+const (
+	statMethod = "/grpc_server.URLShortenerService/Stats"
+	ParamIP    = "X-Real-IP"
+)
+
+// ErrMissingMetadata ошибка получения метадаты
+var ErrMissingMetadata = status.Errorf(codes.Unauthenticated, "missing metadata")
+
+// ErrMissingIPAddress пропущен IP адрес
+var ErrMissingIPAddress = status.Errorf(codes.Unauthenticated, "missing IP address")
+
+// ErrAccessDenied доступ запрещен
+var ErrAccessDenied = status.Errorf(codes.PermissionDenied, "access denied")
+
+// ErrInvalidToken неверный токен
+var ErrInvalidToken = status.Errorf(codes.Unauthenticated, "invalid token")
+
 // AuthenticateInterceptor для аутентификации, logger - логгер, auth - сервис аутентификации, trustedSubnet - доверенная подсеть
 func AuthenticateInterceptor(logger *zap.Logger, auth authenticate.Auth, trustedSubnet string) grpc.UnaryServerInterceptor {
 	return func(
@@ -21,21 +38,21 @@ func AuthenticateInterceptor(logger *zap.Logger, auth authenticate.Auth, trusted
 	) (interface{}, error) {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
-			logger.Error(status.Errorf(codes.Unauthenticated, "missing metadata").Error())
-			return nil, status.Errorf(codes.Unauthenticated, "missing metadata")
+			logger.Error(ErrMissingMetadata.Error())
+			return nil, ErrMissingMetadata
 		}
 
-		if info.FullMethod == "/grpc_server.URLShortenerService/Stats" && trustedSubnet != "" {
-			values := md.Get("X-Real-IP")
+		if info.FullMethod == statMethod && trustedSubnet != "" {
+			values := md.Get(ParamIP)
 			if len(values) == 0 {
-				logger.Error(status.Errorf(codes.Unauthenticated, "missing IP address").Error())
-				return nil, status.Errorf(codes.Unauthenticated, "missing IP address")
+				logger.Error(ErrMissingIPAddress.Error())
+				return nil, ErrMissingIPAddress
 			}
 			_, ipnet, _ := net.ParseCIDR(trustedSubnet)
 			ipB := net.ParseIP(values[0])
 			if !ipnet.Contains(ipB) {
-				logger.Error(status.Errorf(codes.PermissionDenied, "access denied").Error())
-				return nil, status.Errorf(codes.PermissionDenied, "access denied")
+				logger.Error(ErrAccessDenied.Error())
+				return nil, ErrAccessDenied
 			}
 		}
 
@@ -43,8 +60,8 @@ func AuthenticateInterceptor(logger *zap.Logger, auth authenticate.Auth, trusted
 		if len(values) > 0 {
 			decodeUserID, err := auth.GetUserIDFromCookie(values[0])
 			if err != nil {
-				logger.Error(status.Errorf(codes.Unauthenticated, "invalid token").Error())
-				return nil, status.Errorf(codes.Unauthenticated, "invalid token")
+				logger.Error(ErrInvalidToken.Error())
+				return nil, ErrInvalidToken
 			}
 			return handler(context.WithValue(ctx, authenticate.ContextUserID, decodeUserID), req)
 		}
