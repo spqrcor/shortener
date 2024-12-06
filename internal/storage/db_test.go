@@ -132,3 +132,21 @@ func TestDBStorage_getUserOrNull(t *testing.T) {
 	res = getUserOrNull(ctx)
 	assert.NotEqual(t, res, sql.NullString{})
 }
+
+func TestDBStorage_Stat(t *testing.T) {
+	conf := config.NewConfig()
+	loggerRes, _ := logger.NewLogger(zap.InfoLevel)
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	d := DBStorage{
+		config: conf,
+		logger: loggerRes,
+		DB:     db,
+	}
+	mock.ExpectExec(statQuery)
+	_, _ = d.Stat(context.Background())
+}

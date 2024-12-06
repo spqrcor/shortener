@@ -35,7 +35,7 @@ func TestNewServer(t *testing.T) {
 		WithStorage(store),
 		WithBatchRemove(batchRemove),
 	)
-	assert.Equal(t, reflect.TypeOf(server).String() == "*server.HTTPServer", true)
+	assert.Equal(t, reflect.TypeOf(server).String() == "*server.AppServer", true)
 }
 
 func TestHTTPServer_Start(t *testing.T) {

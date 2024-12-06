@@ -1,4 +1,4 @@
-package server
+package middlewares
 
 import (
 	"github.com/go-chi/chi/v5/middleware"
@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// loggerMiddleware middleware для логирования запросов, logger - логгер
-func loggerMiddleware(logger *zap.Logger) func(next http.Handler) http.Handler {
+// LoggerMiddleware middlewares для логирования запросов, logger - логгер
+func LoggerMiddleware(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			start := time.Now()

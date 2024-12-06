@@ -20,6 +20,7 @@ const (
 	findByShortQuery = "SELECT url, deleted_at FROM url_list WHERE short_url = $1"                                                                                // поиск записи
 	findByUserQuery  = "SELECT short_url, url FROM url_list WHERE user_id = $1 AND deleted_at IS NULL"                                                            // поиск записей пользователя
 	removeQuery      = "UPDATE url_list SET deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL AND short_url= ANY($2)"                                  // удаление записи
+	statQuery        = "SELECT COUNT(*), (SELECT COUNT(DISTINCT user_id) FROM url_list WHERE user_id IS NOT NULL) FROM url_list"
 )
 
 // DBStorage тип db хранилища
@@ -195,4 +196,18 @@ func (d DBStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []string
 // ShutDown завершение работы с хранилищем
 func (d DBStorage) ShutDown() error {
 	return d.DB.Close()
+}
+
+// Stat выдача статистки
+func (d DBStorage) Stat(ctx context.Context) (Stat, error) {
+	var output Stat
+
+	childCtx, cancel := context.WithTimeout(ctx, time.Second*d.config.QueryTimeOut)
+	defer cancel()
+
+	row := d.DB.QueryRowContext(childCtx, statQuery)
+	if err := row.Scan(&output.Urls, &output.Users); err != nil {
+		return output, err
+	}
+	return output, nil
 }

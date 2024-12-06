@@ -109,3 +109,8 @@ func (f FileStorage) Remove(ctx context.Context, UserID uuid.UUID, shorts []stri
 func (f FileStorage) ShutDown() error {
 	return nil
 }
+
+// Stat выдача статистки
+func (f FileStorage) Stat(ctx context.Context) (Stat, error) {
+	return Stat{Urls: len(f.Store), Users: 0}, nil
+}

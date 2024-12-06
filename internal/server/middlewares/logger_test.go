@@ -1,4 +1,4 @@
-package server
+package middlewares
 
 import (
 	"github.com/go-chi/chi/v5"
@@ -19,7 +19,7 @@ func Test_loggerMiddleware(t *testing.T) {
 	store := storage.CreateMemoryStorage(conf)
 
 	r := chi.NewRouter()
-	r.Use(loggerMiddleware(loggerRes))
+	r.Use(LoggerMiddleware(loggerRes))
 
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv := httptest.NewServer(r)

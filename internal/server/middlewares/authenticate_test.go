@@ -1,4 +1,4 @@
-package server
+package middlewares
 
 import (
 	"github.com/go-chi/chi/v5"
@@ -26,7 +26,7 @@ func Test_authenticateMiddleware(t *testing.T) {
 		authenticate.WithTokenExp(conf.TokenExp),
 	)
 	r := chi.NewRouter()
-	r.Use(authenticateMiddleware(loggerRes, authService))
+	r.Use(AuthenticateMiddleware(loggerRes, authService, ""))
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv := httptest.NewServer(r)
 	defer srv.Close()
@@ -43,7 +43,7 @@ func Test_authenticateMiddleware(t *testing.T) {
 	})
 
 	r = chi.NewRouter()
-	r.Use(authenticateMiddleware(loggerRes, authService))
+	r.Use(AuthenticateMiddleware(loggerRes, authService, ""))
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv = httptest.NewServer(r)
 	defer srv.Close()
@@ -62,7 +62,7 @@ func Test_authenticateMiddleware(t *testing.T) {
 	})
 
 	r = chi.NewRouter()
-	r.Use(authenticateMiddleware(loggerRes, authService))
+	r.Use(AuthenticateMiddleware(loggerRes, authService, ""))
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv = httptest.NewServer(r)
 	defer srv.Close()
@@ -81,7 +81,7 @@ func Test_authenticateMiddleware(t *testing.T) {
 	token, _ := authService.CreateToken(uuid.New())
 
 	r = chi.NewRouter()
-	r.Use(authenticateMiddleware(loggerRes, authService))
+	r.Use(AuthenticateMiddleware(loggerRes, authService, ""))
 	r.Post(`/`, handlers.CreateShortHandler(store))
 	srv = httptest.NewServer(r)
 	defer srv.Close()
@@ -99,4 +99,20 @@ func Test_authenticateMiddleware(t *testing.T) {
 		}()
 	})
 
+	r = chi.NewRouter()
+	r.Use(AuthenticateMiddleware(loggerRes, authService, "192.168.1.0/24"))
+	r.Get("/api/internal/stats", handlers.InternalStatHandler(store))
+	srv = httptest.NewServer(r)
+	defer srv.Close()
+	t.Run("403", func(t *testing.T) {
+		r := httptest.NewRequest("GET", srv.URL+"/api/internal/stats", nil)
+		r.RequestURI = ""
+		r.Header.Set("Content-Type", "text/html")
+		resp, _ := http.DefaultClient.Do(r)
+		require.Equal(t, http.StatusForbidden, resp.StatusCode)
+		defer func() {
+			err := resp.Body.Close()
+			require.NoError(t, err)
+		}()
+	})
 }
